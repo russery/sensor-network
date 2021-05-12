@@ -71,11 +71,11 @@ constexpr char index_html[] PROGMEM = R"rawliteral(
 String Webserver::WebpageProcessor_(const String &var) {
   if (var == "TEMP") {
     char buff[16] = {0};
-    sprintf(buff, "%4.1fºC", sensor_.GetTemperatureCelcius());
+    // sprintf(buff, "%4.1fºC", sensor_.GetTemperatureCelcius());
     return String(buff);
   } else if (var == "HUM") {
     char buff[16] = {0};
-    sprintf(buff, "%4.1f%", sensor_.GetHumidityPercent());
+    // sprintf(buff, "%4.1f%", sensor_.GetHumidityPercent());
     return String(buff);
   } else if (var == "UPTIME") {
     char buff[128] = {0};
@@ -104,15 +104,14 @@ void Webserver::Start(void) {
   }); // Just direct everything to the same page
   server_.begin();
 #endif
-  sensor_.Start();
+  // sensor_.Start();
 }
 
 void Webserver::StartMdns(void) {
 #if defined(ESP32)
   mdns_init();
   mdns_hostname_set(MDNS_ADDRESS);
-  mdns_active_ =
-      (mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0) == ESP_OK);
+  mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
 #elif defined(ESP8266)
   MDNS.begin(MDNS_ADDRESS);
   MDNS.addService("http", "tcp", 80);

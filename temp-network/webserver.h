@@ -35,7 +35,7 @@ public:
 
 private:
   AsyncWebServer server_;
-  TempSensor sensor_;
+  // TempSensor sensor_;
 
   String WebpageProcessor_(const String &var);
 };
