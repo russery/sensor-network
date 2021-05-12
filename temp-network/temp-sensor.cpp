@@ -20,10 +20,17 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "temp-sensor.h"
 #include "bsp.h"
 
-void TempSensor::Start(void) { pinMode(BSP::DHT11_DATA_PIN, INPUT); }
+void TempSensor::Start(void) {
+  pinMode(BSP::DHT11_DATA_PIN, INPUT);
+  sensor.begin();
+}
 
 float TempSensor::GetTemperatureCelcius(void) {
   return sensor.readTemperature();
+}
+
+float TempSensor::GetTemperatureFahrenheit(void) {
+  return (GetTemperatureCelcius() * 9.0f / 5.0f) + 32.0f;
 }
 
 float TempSensor::GetHumidityPercent(void) { return sensor.readHumidity(); }

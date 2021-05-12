@@ -32,7 +32,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 namespace {
 constexpr char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML><html><head>
-  <title>FM Streamer</title>
+  <title>Temp Monitor</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="refresh" content="10">
   <style>
@@ -71,11 +71,11 @@ constexpr char index_html[] PROGMEM = R"rawliteral(
 String Webserver::WebpageProcessor_(const String &var) {
   if (var == "TEMP") {
     char buff[16] = {0};
-    // sprintf(buff, "%4.1fºC", sensor_.GetTemperatureCelcius());
+    sprintf(buff, "%4.1f&deg;F", sensor_.GetTemperatureFahrenheit());
     return String(buff);
   } else if (var == "HUM") {
     char buff[16] = {0};
-    // sprintf(buff, "%4.1f%", sensor_.GetHumidityPercent());
+    sprintf(buff, "%4.1f&percnt;", sensor_.GetHumidityPercent());
     return String(buff);
   } else if (var == "UPTIME") {
     char buff[128] = {0};
@@ -89,7 +89,6 @@ String Webserver::WebpageProcessor_(const String &var) {
 }
 
 void Webserver::Start(void) {
-#if defined(ESP32)
   server_.on("/", [&](AsyncWebServerRequest *request) {
     request->send_P(200, "text/html", index_html,
                     [&](const String &var) -> String {
@@ -103,8 +102,7 @@ void Webserver::Start(void) {
                     });
   }); // Just direct everything to the same page
   server_.begin();
-#endif
-  // sensor_.Start();
+  sensor_.Start();
 }
 
 void Webserver::StartMdns(void) {
@@ -121,5 +119,7 @@ void Webserver::StartMdns(void) {
 void Webserver::Loop(void) {
 #if defined(ESP8266)
   MDNS.update();
+  Serial.printf("%4.1f%% %4.1fºC\r\n", sensor_.GetHumidityPercent(),
+                sensor_.GetTemperatureCelcius());
 #endif
 }

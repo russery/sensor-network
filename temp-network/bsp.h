@@ -24,22 +24,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 class BSP {
 public:
-#if defined(ESP32)
-  // Status LED and states:
-  static constexpr char LED_PIN PROGMEM = 2;
-  static constexpr char LED_OFF PROGMEM = LOW;
-  static constexpr char LED_ON PROGMEM = HIGH;
-
-#elif defined(ESP8266)
-  // Status LED and states:
   static constexpr char LED_PIN PROGMEM = 16;
   static constexpr char LED_OFF PROGMEM = HIGH;
   static constexpr char LED_ON PROGMEM = LOW;
-#endif // ESP32 / ESP8266
-
-#if defined(HARDWARE_PROTO_ESP8266)
-  static constexpr char DHT11_DATA_PIN = 1;
-#endif // Hardware versions
+  static constexpr char DHT11_DATA_PIN PROGMEM = 15;
 };
 
 #endif // __BSP_H

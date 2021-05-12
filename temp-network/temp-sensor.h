@@ -27,6 +27,7 @@ class TempSensor {
 public:
   void Start(void);
   float GetTemperatureCelcius(void);
+  float GetTemperatureFahrenheit(void);
   float GetHumidityPercent(void);
 
 private:
