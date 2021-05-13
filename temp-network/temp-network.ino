@@ -34,7 +34,8 @@ extern const char WIFI_SSID[];
 extern const char WIFI_PASSWORD[];
 extern const char OTA_UPDATE_PWD[];
 
-Webserver webserver;
+TempSensor sensor;
+Webserver webserver(&sensor);
 
 void (*resetFunc)(void) = 0;
 
@@ -42,7 +43,7 @@ void (*resetFunc)(void) = 0;
 void setup() {
   Serial.begin(115200);
   delay(100);
-  Serial.println("\r\nTemp Network Starting...");
+  Serial.print("\r\nTemp Network Starting...");
 
   pinMode(BSP::LED_PIN, OUTPUT);
   digitalWrite(BSP::LED_PIN, BSP::LED_OFF);
@@ -80,12 +81,18 @@ void setup() {
       Serial.println("End Failed");
   });
   ArduinoOTA.begin();
+
+  sensor.Start();
 }
 
 // cppcheck-suppress unusedFunction
 void loop() {
+  static long last_temp_ms = millis();
   webserver.Loop();
   ArduinoOTA.handle();
-  delay(500);
+  if (millis() - last_temp_ms > 1000) {
+    last_temp_ms = millis();
+    sensor.Loop();
+  }
   yield(); // Make sure WiFi can do its thing.
 }

@@ -27,7 +27,7 @@ public:
   static constexpr char LED_PIN PROGMEM = 16;
   static constexpr char LED_OFF PROGMEM = HIGH;
   static constexpr char LED_ON PROGMEM = LOW;
-  static constexpr char DHT11_DATA_PIN PROGMEM = 15;
+  static constexpr char DHT11_DATA_PIN PROGMEM = 14;
 };
 
 #endif // __BSP_H

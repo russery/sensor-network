@@ -27,7 +27,8 @@ class Webserver {
 public:
   static constexpr char *MDNS_ADDRESS PROGMEM = "tempmon";
 
-  explicit Webserver(uint port = 80) : server_(port){};
+  explicit Webserver(TempSensor *sensor, uint port = 80)
+      : server_(port), sensor_(sensor){};
   void Start(void);
   void StartMdns(void);
   bool IsMdnsActive(void);
@@ -35,7 +36,7 @@ public:
 
 private:
   AsyncWebServer server_;
-  TempSensor sensor_;
+  TempSensor *sensor_;
 
   String WebpageProcessor_(const String &var);
 };

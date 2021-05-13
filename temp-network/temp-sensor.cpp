@@ -34,3 +34,8 @@ float TempSensor::GetTemperatureFahrenheit(void) {
 }
 
 float TempSensor::GetHumidityPercent(void) { return sensor.readHumidity(); }
+
+void TempSensor::Loop(void) {
+  TemperatureFahrenheit = GetTemperatureFahrenheit();
+  HumidityPercent = GetHumidityPercent();
+}

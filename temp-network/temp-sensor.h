@@ -29,6 +29,10 @@ public:
   float GetTemperatureCelcius(void);
   float GetTemperatureFahrenheit(void);
   float GetHumidityPercent(void);
+  void Loop(void);
+
+  float TemperatureFahrenheit = NAN;
+  float HumidityPercent = NAN;
 
 private:
   DHT sensor = DHT(BSP::DHT11_DATA_PIN, DHT11);
