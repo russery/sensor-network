@@ -40,7 +40,7 @@ void (*reset)(void) = 0;
 void setup() {
   Serial.begin(115200);
   delay(100);
-  Serial.print("\r\nTemp Network Starting...");
+  Serial.print("\r\nTemp Sensor Node Starting...");
 
   pinMode(BSP::BUTTON_PIN, INPUT);
   pinMode(BSP::LED_PIN, OUTPUT);

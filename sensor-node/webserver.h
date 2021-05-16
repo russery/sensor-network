@@ -25,6 +25,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 class Webserver {
 private:
+  static constexpr char *ADDRESS_BASE PROGMEM = "sensor-";
   static constexpr uint ADDRESS_LEN_MAX PROGMEM = 128;
   static constexpr char *MDNS_FILE PROGMEM = "/cfg/MDNS.txt";
   AsyncWebServer server_;
@@ -34,7 +35,7 @@ private:
   void HandlePagePost_(AsyncWebServerRequest *request);
 
 public:
-  static constexpr char *DEFAULT_ADDRESS PROGMEM = "tempmon";
+  static constexpr char *DEFAULT_ADDRESS PROGMEM = "unnamed";
   char Address[Webserver::ADDRESS_LEN_MAX] = {};
   bool AddressChanged = false;
 

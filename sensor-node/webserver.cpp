@@ -139,7 +139,7 @@ void Webserver::ChangeAddress(const char new_address[]) {
   SPIFFS.remove(MDNS_FILE);
   File mdns_file_handle = SPIFFS.open(MDNS_FILE, "w");
   memset(Address, 0, Webserver::ADDRESS_LEN_MAX);
-  memcpy(Address, new_address, strlen(new_address) + 1);
+  sprintf(Address, "%s%s", Webserver::ADDRESS_BASE, new_address);
   mdns_file_handle.print(Address);
   mdns_file_handle.close();
   AddressChanged = true;

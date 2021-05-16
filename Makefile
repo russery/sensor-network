@@ -21,8 +21,8 @@ else ifeq ($(MCU_TYPE), esp32)
 endif
 LIBRARIES ?= "DHT sensor library" PubSubClient # Add extra libraries in a space-separated list
 
-PROJECT_BASE = temp-network
-PROJECT ?= temp-network
+PROJECT_BASE = sensor-node
+PROJECT ?= sensor-node
 
 # Tool paths / names
 ARDUINO_CLI = arduino-cli
