@@ -2,12 +2,17 @@
 Network of sensors to monitor temperature throughout the home
 
 
+Raspberry Pi setup:
+- sudo apt install mosquitto
+- sudo apt install mosquitto-clients (maybe not necessary except for testing)
+- Verify mosquitto is running and starts automatically?
+- pip3 install paho-mqtt
+
+
+
 TODO:
-- MDNS lookup for other sensors on network
-	- If none found, become primary and host webpage, while continuing to poll for other sensors
-	- If found, become secondary and publish temperature (how? GET request to primary?)
 - Branding process for sensors
-	- Allow renaming sensors from master webpage
-- Handle sensors that go on and offline cleanly
+	- Long press button to re-init
+		- GPIO0 connected to Flash button
 - Plot time history (hour, day, week) with max and min
 - Periodically flush time history to flash? Maybe downsampled (average temp per hour?)

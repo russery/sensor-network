@@ -19,7 +19,7 @@ else ifeq ($(MCU_TYPE), esp32)
 	GIT_LIBRARIES ?= https://github.com/me-no-dev/ESPAsyncWebServer.git https://github.com/me-no-dev/AsyncTCP.git
 	BOARD_OPTIONS ?=
 endif
-LIBRARIES ?= "DHT sensor library" # Add extra libraries in a space-separated list
+LIBRARIES ?= "DHT sensor library" PubSubClient # Add extra libraries in a space-separated list
 
 PROJECT_BASE = temp-network
 PROJECT ?= temp-network

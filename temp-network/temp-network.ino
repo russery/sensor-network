@@ -16,19 +16,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
-
-#define ESP8266
-#define HARDWARE_PROTO_ESP8266
-
 #include "arduino_secrets.h"
 #include "bsp.h"
+#include "temp-sensor.h"
 #include "webserver.h"
 #include <ArduinoOTA.h>
-#if defined(ESP32)
-#include <WiFi.h>
-#elif defined(ESP8266)
 #include <ESP8266WiFi.h>
-#endif
+#include <FS.h>
+#include <PubSubClient.h>
 
 extern const char WIFI_SSID[];
 extern const char WIFI_PASSWORD[];
@@ -36,8 +31,10 @@ extern const char OTA_UPDATE_PWD[];
 
 TempSensor sensor;
 Webserver webserver(&sensor);
+WiFiClient wificlient;
+PubSubClient mqttclient(wificlient);
 
-void (*resetFunc)(void) = 0;
+void (*reset)(void) = 0;
 
 // cppcheck-suppress unusedFunction
 void setup() {
@@ -45,20 +42,19 @@ void setup() {
   delay(100);
   Serial.print("\r\nTemp Network Starting...");
 
+  pinMode(BSP::BUTTON_PIN, INPUT);
   pinMode(BSP::LED_PIN, OUTPUT);
   digitalWrite(BSP::LED_PIN, BSP::LED_OFF);
-  WiFi.mode(WIFI_STA);
+
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
   while (WiFi.status() != WL_CONNECTED) {
     Serial.print(".");
     delay(250);
   }
 
-  digitalWrite(BSP::LED_PIN, BSP::LED_ON);
   webserver.Start();
-  webserver.StartMdns();
 
-  ArduinoOTA.setHostname(Webserver::MDNS_ADDRESS);
+  ArduinoOTA.setHostname(webserver.Address);
   if (strlen(OTA_UPDATE_PWD) > 0)
     ArduinoOTA.setPassword(OTA_UPDATE_PWD);
 
@@ -83,16 +79,54 @@ void setup() {
   ArduinoOTA.begin();
 
   sensor.Start();
+  mqttclient.setServer("printer.local", 1883);
 }
 
-// cppcheck-suppress unusedFunction
 void loop() {
   static long last_temp_ms = millis();
+  static long address_timer_ms = 0;
+  static bool last_button_state = digitalRead(BSP::BUTTON_PIN);
+  static long button_debounce_ms = millis();
+
+  if (mqttclient.connected()) {
+    if (millis() - last_temp_ms > 1000) {
+      digitalWrite(BSP::LED_PIN, BSP::LED_ON);
+      last_temp_ms = millis();
+      sensor.Loop();
+      char topic[256] = {0};
+      char value[16] = {0};
+      sprintf(topic, "%s/temperature", webserver.Address);
+      sprintf(value, "%4.1f", sensor.TemperatureFahrenheit);
+      mqttclient.publish(topic, value);
+      sprintf(topic, "%s/humidity", webserver.Address);
+      sprintf(value, "%4.1f", sensor.HumidityPercent);
+      mqttclient.publish(topic, value);
+    }
+    mqttclient.loop();
+  } else {
+    mqttclient.connect(webserver.Address);
+  }
+
+  bool button_state = digitalRead(BSP::BUTTON_PIN);
+  if (button_state != last_button_state) {
+    button_debounce_ms = millis();
+    last_button_state = button_state;
+  } else if ((millis() - button_debounce_ms > 5000) &&
+             (last_button_state == BSP::BUTTON_PRESSED)) {
+    webserver.ChangeAddress(Webserver::DEFAULT_ADDRESS);
+  }
+
+  // Address has been changed, give a couple of seconds for webpage to be sent
+  // and then reboot.
+  if (!webserver.AddressChanged)
+    address_timer_ms = millis();
+  if (millis() - address_timer_ms > 2000)
+    reset();
+
   webserver.Loop();
   ArduinoOTA.handle();
-  if (millis() - last_temp_ms > 1000) {
-    last_temp_ms = millis();
-    sensor.Loop();
-  }
+
+  digitalWrite(BSP::LED_PIN, BSP::LED_OFF);
+
   yield(); // Make sure WiFi can do its thing.
 }

@@ -24,8 +24,19 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <ESPAsyncWebServer.h>
 
 class Webserver {
+private:
+  static constexpr uint ADDRESS_LEN_MAX PROGMEM = 128;
+  static constexpr char *MDNS_FILE PROGMEM = "/cfg/MDNS.txt";
+  AsyncWebServer server_;
+  TempSensor *sensor_;
+
+  String WebpageProcessor_(const String &var);
+  void HandlePagePost_(AsyncWebServerRequest *request);
+
 public:
-  static constexpr char *MDNS_ADDRESS PROGMEM = "tempmon";
+  static constexpr char *DEFAULT_ADDRESS PROGMEM = "tempmon";
+  char Address[Webserver::ADDRESS_LEN_MAX] = {};
+  bool AddressChanged = false;
 
   explicit Webserver(TempSensor *sensor, uint port = 80)
       : server_(port), sensor_(sensor){};
@@ -33,12 +44,7 @@ public:
   void StartMdns(void);
   bool IsMdnsActive(void);
   void Loop(void);
-
-private:
-  AsyncWebServer server_;
-  TempSensor *sensor_;
-
-  String WebpageProcessor_(const String &var);
+  void ChangeAddress(const char new_address[]);
 };
 
 #endif //__WEBSERVER_H
