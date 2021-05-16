@@ -79,7 +79,7 @@ String Webserver::WebpageProcessor_(const String &var) {
   } else if (var == "NAME_MAX_LEN") {
     return String(Webserver::ADDRESS_LEN_MAX);
   } else if (var == "ADDRESS") {
-    return String(Address);
+    return String(Address).substring(strlen(ADDRESS_BASE));
   }
   return String();
 }
