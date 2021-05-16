@@ -28,6 +28,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 extern const char WIFI_SSID[];
 extern const char WIFI_PASSWORD[];
 extern const char OTA_UPDATE_PWD[];
+extern const char MQTT_SERVER[];
 
 TempSensor sensor;
 Webserver webserver(&sensor);
@@ -79,7 +80,7 @@ void setup() {
   ArduinoOTA.begin();
 
   sensor.Start();
-  mqttclient.setServer("printer.local", 1883);
+  mqttclient.setServer(MQTT_SERVER, 1883);
 }
 
 void loop() {

@@ -11,8 +11,6 @@ Raspberry Pi setup:
 
 
 TODO:
-- Branding process for sensors
-	- Long press button to re-init
-		- GPIO0 connected to Flash button
+- downsample and write data to csv from all sensors
 - Plot time history (hour, day, week) with max and min
 - Periodically flush time history to flash? Maybe downsampled (average temp per hour?)

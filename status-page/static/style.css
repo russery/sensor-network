@@ -1,0 +1,17 @@
+html {
+  font-family: Helvetica;
+  display: inline-block;
+}
+body {
+  width: 80%;
+  position: fixed;
+  padding: 20px;
+}
+h2 {
+  text-align: center;
+  margin-top: 0;
+}
+.chart {
+  width:100%;
+  height:400px;
+}
