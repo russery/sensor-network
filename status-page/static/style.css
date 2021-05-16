@@ -3,7 +3,7 @@ html {
   display: inline-block;
 }
 body {
-  width: 80%;
+  width: 90vw;
   position: fixed;
   padding: 20px;
 }
@@ -12,6 +12,6 @@ h2 {
   margin-top: 0;
 }
 .chart {
-  width:100%;
-  height:400px;
+  width: 90vw;
+  height: 35vh;;
 }
