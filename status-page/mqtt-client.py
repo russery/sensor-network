@@ -1,10 +1,10 @@
+import json
+import os
 import paho.mqtt.client as mqtt
 from time import time, sleep
-import json
 
 sensor_types = []
 data_store = {}
-
 
 def on_connect(client, userdata, flags, rc):
     print("Connected with result code " + str(rc))
@@ -33,6 +33,8 @@ def main():
 
     last_write_time = time()
     last_live_update_time = time()
+    if not os.path.exists("static/data/"):
+        os.makedirs("static/data/")
     while True:
         client.loop()
         if time() - last_live_update_time > 1:
