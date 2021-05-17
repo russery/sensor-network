@@ -23,7 +23,14 @@ Once programming is complete, open a web browser to [http://unnamed.local/](http
 Repeat these steps with as many sensors as you like, and they'll start publishing temperature and humidity data on your network.
 
 ## Server
-To set up the server, cd into the `status-page` directory and run `python3 setup.py install`. This will install the python dependencies for you (assuming you already have python3 installed).
+You'll need to have [Mosquitto](https://mosquitto.org/) or some other MQTT broker/server running. This doesn't have to be on the same machine that's serving the status page, but it's OK if it is. To install on Linux and enable the broker service, run the following:
+```
+sudo apt update
+sudo apt install -y mosquitto mosquitto-clients
+sudo systemctl enable mosquitto.service
+```
+
+To set up the webserver, cd into the `status-page` directory and run `python3 setup.py install`. This will install the python dependencies for you (assuming you already have python3 installed).
 
 To manually launch the MQTT and HTTP servers, run:
 ```
@@ -31,3 +38,6 @@ python3 mqtt-client.py&
 python3 status-page.py&
 ```
 Once these are running, you should be able to view the status webpage at [http://localhost/](http://localhost/) or any other address that resolves to the server. All of the sensors on your network should automagically come up and show both their current readings and a time history.
+
+Here's an example of what the page looks like with four sensors connected:
+<img src="docs/page.png" width="500px"/>
