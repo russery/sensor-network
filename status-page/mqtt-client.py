@@ -3,6 +3,9 @@ import os
 import paho.mqtt.client as mqtt
 from time import time, sleep
 
+MQTT_HOST = "printer.local"
+LOG_PATH = "/home/pi/temp-network/status-page/static/data/"
+
 sensor_types = []
 data_store = {}
 
@@ -28,25 +31,25 @@ def main():
     client = mqtt.Client()
     client.on_connect = on_connect
     client.on_message = on_message
-    client.connect("printer.local", 1883, 60)
+    client.connect(MQTT_HOST, 1883, 60)
     client.subscribe([("+/temperature", 0), ("+/humidity", 0)])
 
     last_write_time = time()
     last_live_update_time = time()
-    if not os.path.exists("static/data/"):
-        os.makedirs("static/data/")
+    if not os.path.exists(LOG_PATH):
+        os.makedirs(LOG_PATH)
     while True:
         client.loop()
         if time() - last_live_update_time > 1:
             last_live_update_time = time()
             # Write latest data to JSON:
-            with open("static/data/sensor_data.json", "w") as json_file:
+            with open(LOG_PATH+"sensor_data.json", "w") as json_file:
                 json.dump(data_store, json_file)
         if time() - last_write_time > 60 * 5:
             last_write_time = time()
             # Append data to log CSV:
             for sensor_type in sensor_types:
-                with open("static/data/" + sensor_type + "_data.csv",
+                with open(LOG_PATH + sensor_type + "_data.csv",
                           "a") as csv_file:
                     for sensor in data_store:
                         if sensor_type in data_store[sensor]:

@@ -1,16 +1,10 @@
 # temp-network
-Network of sensors to monitor temperature throughout the home
+Network of sensors to monitor temperature and humidity on a local network.
+
+The temperature sensors are a set of ESP8266 nodes with HT11 temperature sensors. These publish temperature and humidity data to a central MQTT server, which then logs the data and serves a webpage with realtime and historical data.
 
 
-Raspberry Pi setup:
-- sudo apt install mosquitto
-- sudo apt install mosquitto-clients (maybe not necessary except for testing)
-- Verify mosquitto is running and starts automatically?
-- pip3 install paho-mqtt
+## Setup
 
 
 
-TODO:
-- downsample and write data to csv from all sensors
-- Plot time history (hour, day, week) with max and min
-- Periodically flush time history to flash? Maybe downsampled (average temp per hour?)
