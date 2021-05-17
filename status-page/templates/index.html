@@ -139,6 +139,7 @@ function updateReadings() {
   const TempHttp = new XMLHttpRequest();
   TempHttp.responseType = 'json';
   TempHttp.open('GET', '/static/data/sensor_data.json');
+  TempHttp.setRequestHeader("Cache-Control", "no-cache, no-store, max-age=0");
   TempHttp.send();
   TempHttp.onreadystatechange = (e) => {
     if(TempHttp.readyState === XMLHttpRequest.DONE){
