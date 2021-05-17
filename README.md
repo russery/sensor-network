@@ -8,10 +8,10 @@ The MQTT server / webserver can be any computer, but I'm using a Raspberry Pi. I
 # Setup
 
 ## Sensor Node
-Each sensor node is an [ESP8266 NodeMCU](https://www.amazon.com/HiLetgo-Internet-Development-Wireless-Micropython/dp/B010O1G1ES) with a [DH11 Temperature Sensor](https://www.amazon.com/gp/product/B01DKC2GQ0/) wired to it. The DH11 wiring is very simple:
-- DH11 `+` pin to the ESP8266 `VIN/5V` pin
-- DH11 `-` pin to an ESP8266 `GND` pin
-- DH11 `out` pin to ESP8266 `GPIO14` (marked `D5`)
+Each sensor node is an [ESP8266 NodeMCU](https://www.amazon.com/HiLetgo-Internet-Development-Wireless-Micropython/dp/B010O1G1ES) with a [DH11 Temperature Sensor](https://www.amazon.com/gp/product/B01DKC2GQ0/) wired to it. The DHT11 wiring is very simple:
+- DHT11 `+` pin to the ESP8266 `VIN/5V` pin
+- DHT11 `-` pin to an ESP8266 `GND` pin
+- DHT11 `out` pin to ESP8266 `GPIO14` (marked `D5`)
 
 To load code onto the ESP8266, connect it to your computer, enter a command line in the `sensor-node` directory and run:
 ```
