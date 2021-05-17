@@ -91,7 +91,7 @@ void loop() {
 
   if (mqttclient.connected()) {
     if (millis() - last_temp_ms > 1000) {
-      digitalWrite(BSP::LED_PIN, BSP::LED_ON);
+      //digitalWrite(BSP::LED_PIN, BSP::LED_ON);
       last_temp_ms = millis();
       sensor.Loop();
       char topic[256] = {0};
