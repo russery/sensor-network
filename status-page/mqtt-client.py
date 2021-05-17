@@ -1,9 +1,11 @@
 import json
 import os
 import paho.mqtt.client as mqtt
+import socket
 from time import time, sleep
 
-MQTT_HOST = "printer.local"
+
+MQTT_HOST = socket.gethostname() + ".local"
 LOG_PATH = "/home/pi/temp-network/status-page/static/data/"
 
 sensor_types = []
