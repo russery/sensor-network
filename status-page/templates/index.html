@@ -1,0 +1,159 @@
+<!DOCTYPE HTML><html><head>
+  <title>Sensor Network</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href='/static/style.css' />
+  <script type="text/javascript" src="https://code.highcharts.com/highcharts.js"></script>
+  <script type="text/javascript" src="https://code.highcharts.com/modules/data.js"></script>
+</head>
+<body>
+  <div id="live_data"></div>
+  <div id="temp_chart" class="chart"></div>
+  <div id="humidity_chart" class="chart"></div>
+</body>
+<script>
+var temp_chart = new Highcharts.Chart('temp_chart', {
+  plotOptions: {
+    spline: {
+      marker: {enabled: false},
+    }
+  },
+  chart: {
+    renderTo: 'temp_chart',
+    type: 'spline',
+    zoomType: 'x'
+  },
+  title: {
+    text: null
+  },
+  colors: ['#90ed7d', '#f7a35c', '#8085e9', '#f15c80', '#e4d354', '#8085e8', '#8d4653', '#91e8e1', '#7cb5ec', '#434348'],
+  data: {
+    enablePolling: true,
+    csvURL: window.location.origin + '/static/data/temperature_data.csv',
+    dataRefreshRate: 10,
+    complete: function(data) {
+      var series = data.series,
+        seriesLength = series[0].data.length,
+        newSeries = [],
+        names = [],
+        name;
+
+      // Create a series for each sensor:
+      series[0].data.forEach(function(point, index) {
+        if (point[0] !== name) {
+          name = point[0];
+          names.indexOf(name) === -1 ? names.push(name) : void(0);
+        }
+      });
+      names.forEach(function(name) {
+        newSeries.push({
+          name: name,
+          data: []
+        });
+      });
+      for (var i = 0; i < seriesLength; i++) {
+        var seriesOneData = series[0].data[i],
+          seriesTwoData = series[1].data[i];
+        indexOfSeries = names.indexOf(seriesOneData[0]);
+        newSeries[indexOfSeries].data.push([new Date(seriesOneData[1] * 1000).toLocaleTimeString("en-US"), seriesTwoData[1]]);
+      }
+      data.series = newSeries;
+    }
+  },
+  xAxis: {
+    type: 'datetime',
+    minTickInterval: 30,
+    crosshair: true,
+  },
+  yAxis: {
+    title: {
+      text: 'Temperature (&deg;F)'
+    }
+  },
+  credits: {
+    enabled: false
+  }
+});
+var temp_chart = new Highcharts.Chart('humidity_chart', {
+  plotOptions: {
+    spline: {
+      marker: {enabled: false},
+    }
+  },
+  chart: {
+    renderTo: 'humidity_chart',
+    type: 'spline',
+    zoomType: 'x'
+  },
+  title: {
+    text: null
+  },
+  colors: ['#90ed7d', '#f7a35c', '#8085e9', '#f15c80', '#e4d354', '#8085e8', '#8d4653', '#91e8e1', '#7cb5ec', '#434348'],
+  data: {
+    enablePolling: true,
+    csvURL: window.location.origin + '/static/data/humidity_data.csv',
+    dataRefreshRate: 10,
+    complete: function(data) {
+      var series = data.series,
+        seriesLength = series[0].data.length,
+        newSeries = [],
+        names = [],
+        name;
+      series[0].data.forEach(function(point, index) {
+        if (point[0] !== name) {
+          name = point[0];
+          names.indexOf(name) === -1 ? names.push(name) : void(0);
+        }
+      });
+      names.forEach(function(name) {
+        newSeries.push({
+          name: name,
+          data: []
+        });
+      });
+      for (var i = 0; i < seriesLength; i++) {
+        var seriesOneData = series[0].data[i],
+          seriesTwoData = series[1].data[i];
+        indexOfSeries = names.indexOf(seriesOneData[0]);
+        newSeries[indexOfSeries].data.push([new Date(seriesOneData[1] * 1000).toLocaleTimeString("en-US"), seriesTwoData[1]]);
+      }
+      data.series = newSeries;
+    }
+  },
+  yAxis: {
+    title: {
+      text: 'Humidity (%)'
+    }
+  },
+  xAxis: {
+    type: 'datetime',
+    minTickInterval: 30,
+    crosshair: true,
+  },
+  credits: {
+    enabled: false
+  }
+});
+
+var interval = setTimeout(updateReadings, 1000);
+function updateReadings() {
+  const TempHttp = new XMLHttpRequest();
+  TempHttp.responseType = 'json';
+  TempHttp.open('GET', '/static/data/sensor_data.json');
+  TempHttp.send();
+  TempHttp.onreadystatechange = (e) => {
+    if(TempHttp.readyState === XMLHttpRequest.DONE){
+        var resp = TempHttp.response;
+        var text = '';
+        for (var sensor_node in resp){
+          text += '<div class="sensor"><div class="sensor_name">' + sensor_node + '</div>';
+          text += '<div class="reading">' + resp[sensor_node]['temperature'] + '&deg;F</div>';
+          text += '<div class="reading">' + resp[sensor_node]['humidity'] + '%</div></div>';
+        }
+        document.getElementById("live_data").innerHTML = text;
+      }
+  }
+  interval = setTimeout(updateReadings, 1000);
+}
+updateReadings()
+</script>
+</html>
