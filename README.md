@@ -3,7 +3,7 @@ Network of sensors to monitor temperature and humidity on a local network.
 
 The temperature sensors are a set of ESP8266 nodes with HT11 temperature sensors. These publish temperature and humidity data to a central MQTT server, which then logs the data and serves a webpage with realtime and historical data.
 
-The MQTT server / webserver can be any computer, but I'm using a Raspberry Pi. I have it set up running an avahi mdns daemon to give it a local address at `http://\<pi-hostname\>.local`.
+The MQTT server / webserver can be any computer, but I'm using a Raspberry Pi. I have it set up running an avahi mdns daemon to give it a local address at `http://<pi-hostname>.local`.
 
 # Setup
 
