@@ -11,7 +11,7 @@ INFLUXDB_DATABASE = 'home_sensors'
 MQTT_ADDRESS = 'localhost'
 MQTT_USER = ''
 MQTT_PASSWORD = ''
-MQTT_TOPIC = '$SYS/#'
+MQTT_TOPIC = '+/+'
 MQTT_CLIENT_ID = 'MQTTInfluxDBBridge'
 
 influxdb_client = InfluxDBClient(INFLUXDB_ADDRESS, 8086, INFLUXDB_USER, INFLUXDB_PASSWORD, None)
