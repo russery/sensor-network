@@ -6,7 +6,7 @@ from time import time, sleep
 
 
 MQTT_HOST = socket.gethostname() + ".local"
-LOG_PATH = "/home/pi/temp-network/status-page/static/data/"
+LOG_PATH = "static/data/"
 
 sensor_types = []
 data_store = {}
