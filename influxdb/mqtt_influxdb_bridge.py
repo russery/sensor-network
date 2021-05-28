@@ -1,4 +1,3 @@
-import re
 from typing import NamedTuple
 
 import paho.mqtt.client as mqtt
@@ -12,8 +11,7 @@ INFLUXDB_DATABASE = 'home_sensors'
 MQTT_ADDRESS = 'localhost'
 MQTT_USER = ''
 MQTT_PASSWORD = ''
-MQTT_TOPIC = '+/+'
-MQTT_REGEX = '([^/]+)/([^/]+)'
+MQTT_TOPIC = '$SYS/#'
 MQTT_CLIENT_ID = 'MQTTInfluxDBBridge'
 
 influxdb_client = InfluxDBClient(INFLUXDB_ADDRESS, 8086, INFLUXDB_USER, INFLUXDB_PASSWORD, None)
@@ -29,13 +27,11 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe(MQTT_TOPIC)
 
 def _parse_mqtt_message(topic, payload):
-    match = re.match(MQTT_REGEX, topic)
-    if match:
-        location = match.group(1)
-        measurement = match.group(2)
-        if measurement == 'status':
-            return None
-        return SensorData(location, measurement, float(payload))
+    if "sensor-" in msg.topic:
+        sensor_name, sensor_type = msg.topic.split("/")
+        sensor_name = sensor_name.replace("sensor-", "")
+        sensor_data = float(msg.payload)
+        return SensorData(sensor_name, sensor_type, sensor_data)
     else:
         return None
 
