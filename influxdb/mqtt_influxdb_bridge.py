@@ -27,10 +27,10 @@ def on_connect(client, userdata, flags, rc):
     client.subscribe(MQTT_TOPIC)
 
 def _parse_mqtt_message(topic, payload):
-    if "sensor-" in msg.topic:
-        sensor_name, sensor_type = msg.topic.split("/")
+    if "sensor-" in topic:
+        sensor_name, sensor_type = topic.split("/")
         sensor_name = sensor_name.replace("sensor-", "")
-        sensor_data = float(msg.payload)
+        sensor_data = float(payload)
         return SensorData(sensor_name, sensor_type, sensor_data)
     else:
         return None
