@@ -1,5 +1,6 @@
 /*
-Implements a network of temperature sensors, viewable from the web.
+Implements a temperature/humidity sensor node with a
+branding/configuration webpage and that broadcasts data over MQTT.
 
 Copyright (C) 2021  Robert Ussery
 

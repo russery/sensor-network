@@ -3,10 +3,10 @@ SERIAL_PORT ?= /dev/cu.usbserial-0001
 BAUDRATE ?= 115200
 
 # Hardware to target
-HARDWARE ?= HARDWARE_PROTO_ESP8266
+HARDWARE ?= HARDWARE_PROTO_ESP32
 
-ifeq ($(HARDWARE), HARDWARE_PROTO_ESP8266)
-	MCU_TYPE ?=	esp8266
+ifeq ($(HARDWARE), HARDWARE_PROTO_ESP32)
+	MCU_TYPE ?=	esp32
 endif
 ifeq ($(MCU_TYPE), esp8266)
 	BOARD_TYPE ?= $(MCU_TYPE):$(MCU_TYPE):nodemcuv2
@@ -19,10 +19,10 @@ else ifeq ($(MCU_TYPE), esp32)
 	GIT_LIBRARIES ?= https://github.com/me-no-dev/ESPAsyncWebServer.git https://github.com/me-no-dev/AsyncTCP.git
 	BOARD_OPTIONS ?=
 endif
-LIBRARIES ?= "DHT sensor library" PubSubClient # Add extra libraries in a space-separated list
+LIBRARIES ?= "Adafruit PM25 AQI Sensor" PubSubClient # Add extra libraries in a space-separated list
 
-PROJECT_BASE = sensor-node
-PROJECT ?= sensor-node
+PROJECT_BASE = air-quality-node
+PROJECT ?= air-quality-node
 
 # Tool paths / names
 ARDUINO_CLI = arduino-cli
