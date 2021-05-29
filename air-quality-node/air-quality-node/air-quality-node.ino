@@ -1,73 +1,135 @@
-/* Test sketch for Adafruit PM2.5 sensor with UART or I2C */
+/*
+Implements a temperature/humidity sensor node with a
+branding/configuration webpage and that broadcasts data over MQTT.
 
-#include "Adafruit_PM25AQI.h"
+Copyright (C) 2021  Robert Ussery
 
-// If your PM2.5 is UART only, for UNO and others (without hardware serial) 
-// we must use software serial...
-// pin #2 is IN from sensor (TX pin on sensor), leave pin #3 disconnected
-// comment these two lines if using hardware serial
-//#include <SoftwareSerial.h>
-//SoftwareSerial pmSerial(2, 3);
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
 
-Adafruit_PM25AQI aqi = Adafruit_PM25AQI();
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
 
+You should have received a copy of the GNU General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>.
+*/
+#include "aqi-sensor.h"
+#include "arduino_secrets.h"
+#include "bsp.h"
+#include "webserver.h"
+#include <ArduinoOTA.h>
+#if defined(ESP32)
+#include <WiFi.h>
+#elif defined(ESP8266)
+#include <ESP8266WiFi.h>
+#endif // ESP32 / ESP8266
+
+#include <PubSubClient.h>
+
+extern const char WIFI_SSID[];
+extern const char WIFI_PASSWORD[];
+extern const char OTA_UPDATE_PWD[];
+extern const char MQTT_SERVER[];
+
+AQISensor sensor;
+Webserver webserver(&sensor);
+WiFiClient wificlient;
+PubSubClient mqttclient(wificlient);
+
+void (*reset)(void) = 0;
+
+// cppcheck-suppress unusedFunction
 void setup() {
-  // Wait for serial monitor to open
   Serial.begin(115200);
-  while (!Serial) delay(10);
+  delay(100);
+  Serial.print("\r\nAQI Sensor Node Starting...");
 
-  Serial.println("Adafruit PMSA003I Air Quality Sensor");
+  pinMode(BSP::BUTTON_PIN, INPUT);
+  pinMode(BSP::LED_PIN, OUTPUT);
+  digitalWrite(BSP::LED_PIN, BSP::LED_OFF);
 
-  // Wait one second for sensor to boot up!
-  delay(1000);
-
-  // If using serial, initialize it and set baudrate before starting!
-  // Uncomment one of the following
-  Serial2.begin(9600);
-  //pmSerial.begin(9600);
-
-  // There are 3 options for connectivity!
-  //if (! aqi.begin_I2C()) {      // connect to the sensor over I2C
-  if (! aqi.begin_UART(&Serial2)) { // connect to the sensor over hardware serial
-  //if (! aqi.begin_UART(&pmSerial)) { // connect to the sensor over software serial 
-    Serial.println("Could not find PM 2.5 sensor!");
-    while (1) delay(10);
+  WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
+  while (WiFi.status() != WL_CONNECTED) {
+    Serial.print(".");
+    delay(250);
   }
 
-  Serial.println("PM25 found!");
+  webserver.Start();
+
+  ArduinoOTA.setHostname(webserver.Address);
+  if (strlen(OTA_UPDATE_PWD) > 0)
+    ArduinoOTA.setPassword(OTA_UPDATE_PWD);
+
+  ArduinoOTA.onStart([]() { Serial.println("Start updating sketch"); });
+  ArduinoOTA.onEnd([]() { Serial.println("\nFinished Updating"); });
+  ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+    Serial.printf("Progress: %u%%\r", (progress / (total / 100)));
+  });
+  ArduinoOTA.onError([](ota_error_t error) {
+    Serial.printf("Error[%u]: ", error);
+    if (error == OTA_AUTH_ERROR)
+      Serial.println("Auth Failed");
+    else if (error == OTA_BEGIN_ERROR)
+      Serial.println("Begin Failed");
+    else if (error == OTA_CONNECT_ERROR)
+      Serial.println("Connect Failed");
+    else if (error == OTA_RECEIVE_ERROR)
+      Serial.println("Receive Failed");
+    else if (error == OTA_END_ERROR)
+      Serial.println("End Failed");
+  });
+  ArduinoOTA.begin();
+
+  sensor.Start();
+  mqttclient.setServer(MQTT_SERVER, 1883);
 }
 
 void loop() {
-  PM25_AQI_Data data;
-  
-  if (! aqi.read(&data)) {
-    Serial.println("Could not read from AQI");
-    delay(500);  // try again in a bit!
-    return;
+  static long last_temp_ms = millis();
+  static long address_timer_ms = 0;
+  static bool last_button_state = digitalRead(BSP::BUTTON_PIN);
+  static long button_debounce_ms = millis();
+
+  if (mqttclient.connected()) {
+    if (millis() - last_temp_ms > 1000) {
+      // digitalWrite(BSP::LED_PIN, BSP::LED_ON);
+      last_temp_ms = millis();
+      sensor.Loop();
+      char topic[256] = {0};
+      char value[16] = {0};
+      sprintf(topic, "%s/aqi/pm2p5", webserver.Address);
+      sprintf(value, "%4d", sensor.data.pm25_env);
+      mqttclient.publish(topic, value);
+    }
+    mqttclient.loop();
+  } else {
+    mqttclient.connect(webserver.Address);
   }
-  Serial.println("AQI reading success");
 
-  Serial.println();
-  Serial.println(F("---------------------------------------"));
-  Serial.println(F("Concentration Units (standard)"));
-  Serial.println(F("---------------------------------------"));
-  Serial.print(F("PM 1.0: ")); Serial.print(data.pm10_standard);
-  Serial.print(F("\t\tPM 2.5: ")); Serial.print(data.pm25_standard);
-  Serial.print(F("\t\tPM 10: ")); Serial.println(data.pm100_standard);
-  Serial.println(F("Concentration Units (environmental)"));
-  Serial.println(F("---------------------------------------"));
-  Serial.print(F("PM 1.0: ")); Serial.print(data.pm10_env);
-  Serial.print(F("\t\tPM 2.5: ")); Serial.print(data.pm25_env);
-  Serial.print(F("\t\tPM 10: ")); Serial.println(data.pm100_env);
-  Serial.println(F("---------------------------------------"));
-  Serial.print(F("Particles > 0.3um / 0.1L air:")); Serial.println(data.particles_03um);
-  Serial.print(F("Particles > 0.5um / 0.1L air:")); Serial.println(data.particles_05um);
-  Serial.print(F("Particles > 1.0um / 0.1L air:")); Serial.println(data.particles_10um);
-  Serial.print(F("Particles > 2.5um / 0.1L air:")); Serial.println(data.particles_25um);
-  Serial.print(F("Particles > 5.0um / 0.1L air:")); Serial.println(data.particles_50um);
-  Serial.print(F("Particles > 10 um / 0.1L air:")); Serial.println(data.particles_100um);
-  Serial.println(F("---------------------------------------"));
-  
+  bool button_state = digitalRead(BSP::BUTTON_PIN);
+  if (button_state != last_button_state) {
+    button_debounce_ms = millis();
+    last_button_state = button_state;
+  } else if ((millis() - button_debounce_ms > 5000) &&
+             (last_button_state == BSP::BUTTON_PRESSED)) {
+    webserver.ChangeAddress(Webserver::DEFAULT_ADDRESS);
+  }
 
-  delay(1000);
+  // Address has been changed, give a couple of seconds for webpage to be sent
+  // and then reboot.
+  if (!webserver.AddressChanged)
+    address_timer_ms = millis();
+  if (millis() - address_timer_ms > 2000)
+    reset();
+
+  webserver.Loop();
+  ArduinoOTA.handle();
+
+  digitalWrite(BSP::LED_PIN, BSP::LED_OFF);
+
+  yield(); // Make sure WiFi can do its thing.
 }
