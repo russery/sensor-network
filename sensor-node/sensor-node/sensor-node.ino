@@ -38,6 +38,11 @@ PubSubClient mqttclient(wificlient);
 
 void (*reset)(void) = 0;
 
+unsigned long time_diff(unsigned long last_ms) {
+  return abs((long long)millis() - (long long)last_ms);
+}
+
+
 // cppcheck-suppress unusedFunction
 void setup() {
   Serial.begin(115200);
@@ -86,12 +91,8 @@ void setup() {
 
 void loop() {
   static long last_temp_ms = millis();
-  static long address_timer_ms = 0;
-  static bool last_button_state = digitalRead(BSP::BUTTON_PIN);
-  static long button_debounce_ms = millis();
-
   if (mqttclient.connected()) {
-    if (millis() - last_temp_ms > 1000) {
+    if (time_diff(last_temp_ms) > 10000) {
       //digitalWrite(BSP::LED_PIN, BSP::LED_ON);
       last_temp_ms = millis();
       sensor.Loop();
@@ -109,20 +110,23 @@ void loop() {
     mqttclient.connect(webserver.Address);
   }
 
+  static bool last_button_state = digitalRead(BSP::BUTTON_PIN);
+  static long button_debounce_ms = millis();
   bool button_state = digitalRead(BSP::BUTTON_PIN);
   if (button_state != last_button_state) {
     button_debounce_ms = millis();
     last_button_state = button_state;
-  } else if ((millis() - button_debounce_ms > 5000) &&
+  } else if ((time_diff(button_debounce_ms) > 5000) &&
              (last_button_state == BSP::BUTTON_PRESSED)) {
     webserver.ChangeAddress(Webserver::DEFAULT_ADDRESS);
   }
 
   // Address has been changed, give a couple of seconds for webpage to be sent
   // and then reboot.
+  static long address_timer_ms = 0;
   if (!webserver.AddressChanged)
     address_timer_ms = millis();
-  if (millis() - address_timer_ms > 2000)
+  if (time_diff(address_timer_ms) > 2000)
     reset();
 
   webserver.Loop();

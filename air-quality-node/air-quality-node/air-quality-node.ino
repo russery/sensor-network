@@ -24,10 +24,10 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <ArduinoOTA.h>
 #if defined(ESP32)
 #include <WiFi.h>
+#include <mdns.h>
 #elif defined(ESP8266)
 #include <ESP8266WiFi.h>
 #endif // ESP32 / ESP8266
-
 #include <PubSubClient.h>
 
 extern const char WIFI_SSID[];
@@ -41,6 +41,10 @@ WiFiClient wificlient;
 PubSubClient mqttclient(wificlient);
 
 void (*reset)(void) = 0;
+
+unsigned long time_diff(unsigned long last_ms) {
+  return abs((long long)millis() - (long long)last_ms);
+}
 
 // cppcheck-suppress unusedFunction
 void setup() {
@@ -84,46 +88,64 @@ void setup() {
   });
   ArduinoOTA.begin();
 
+  Serial.printf("\r\nQuery A: %s", MQTT_SERVER);
+
+  struct ip4_addr addr;
+  addr.addr = 0;
+
+  esp_err_t err = mdns_query_a("printer", 2000, &addr);
+  if (err) {
+    if (err == ESP_ERR_NOT_FOUND) {
+      printf("Host was not found!");
+      return;
+    }
+    printf("Query Failed");
+    return;
+  }
+  char addr_str[16];
+  sprintf(addr_str, IPSTR, IP2STR(&addr));
+  Serial.println(addr_str);
+
   sensor.Start();
-  mqttclient.setServer(MQTT_SERVER, 1883);
+  mqttclient.setServer(addr_str, 1883);
 }
 
 void loop() {
-  static long last_temp_ms = millis();
-  static long address_timer_ms = 0;
-  static bool last_button_state = digitalRead(BSP::BUTTON_PIN);
-  static long button_debounce_ms = millis();
-
-  if (mqttclient.connected()) {
-    if (millis() - last_temp_ms > 1000) {
-      // digitalWrite(BSP::LED_PIN, BSP::LED_ON);
-      last_temp_ms = millis();
+  static long last_sensor_ms = millis();
+  if (!mqttclient.connected()) {
+    mqttclient.connect(webserver.Address);
+  } else {
+    if (time_diff(last_sensor_ms) > 10000) {
+      digitalWrite(BSP::LED_PIN, BSP::LED_ON);
+      last_sensor_ms = millis();
       sensor.Loop();
       char topic[256] = {0};
       char value[16] = {0};
-      sprintf(topic, "%s/aqi/pm2p5", webserver.Address);
+      sprintf(topic, "%s/aqi-pm2p5", webserver.Address);
       sprintf(value, "%4d", sensor.data.pm25_env);
       mqttclient.publish(topic, value);
+      Serial.printf("\r\nPM2.5 %d\r\n", sensor.data.pm25_env);
     }
-    mqttclient.loop();
-  } else {
-    mqttclient.connect(webserver.Address);
   }
+  mqttclient.loop();
 
+  static bool last_button_state = digitalRead(BSP::BUTTON_PIN);
+  static long button_debounce_ms = millis();
   bool button_state = digitalRead(BSP::BUTTON_PIN);
   if (button_state != last_button_state) {
     button_debounce_ms = millis();
     last_button_state = button_state;
-  } else if ((millis() - button_debounce_ms > 5000) &&
+  } else if ((time_diff(button_debounce_ms) > 5000) &&
              (last_button_state == BSP::BUTTON_PRESSED)) {
     webserver.ChangeAddress(Webserver::DEFAULT_ADDRESS);
   }
 
   // Address has been changed, give a couple of seconds for webpage to be sent
   // and then reboot.
+  static long address_timer_ms = 0;
   if (!webserver.AddressChanged)
     address_timer_ms = millis();
-  if (millis() - address_timer_ms > 2000)
+  if (time_diff(address_timer_ms) > 2000)
     reset();
 
   webserver.Loop();
