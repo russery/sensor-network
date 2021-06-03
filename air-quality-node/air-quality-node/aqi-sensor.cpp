@@ -110,5 +110,5 @@ void AQISensor::Loop(void) {
 }
 
 bool AQISensor::IsDataStale(unsigned long stale_ms) {
-  return stale_timer_.CheckIntervalExceeded(stale_ms) && data_valid_;
+  return stale_timer_.CheckIntervalExceeded(stale_ms) || !data_valid_;
 }

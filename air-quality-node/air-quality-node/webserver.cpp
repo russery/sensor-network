@@ -73,7 +73,11 @@ constexpr char index_html[] PROGMEM = R"rawliteral(
 String Webserver::WebpageProcessor_(const String &var) {
   if (var == "PM25") {
     char buff[16] = {0};
-    sprintf(buff, "%4d", sensor_->data.pm25_env);
+    if (!sensor_->IsDataStale()) {
+      sprintf(buff, "%4d", sensor_->data.pm25_env);
+    } else {
+      sprintf(buff, "invalid");
+    }
     return String(buff);
   } else if (var == "UPTIME") {
     char buff[128] = {0};
