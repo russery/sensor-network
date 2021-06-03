@@ -19,10 +19,10 @@ else ifeq ($(MCU_TYPE), esp32)
 	GIT_LIBRARIES ?= https://github.com/me-no-dev/ESPAsyncWebServer.git https://github.com/me-no-dev/AsyncTCP.git
 	BOARD_OPTIONS ?=
 endif
-LIBRARIES ?= "DHT sensor library" PubSubClient # Add extra libraries in a space-separated list
+LIBRARIES ?= PubSubClient # Add extra libraries in a space-separated list
 
-PROJECT_BASE = sensor-node
-PROJECT ?= sensor-node
+PROJECT_BASE = air-quality-node
+PROJECT ?= air-quality-node
 
 # Tool paths / names
 ARDUINO_CLI = arduino-cli
@@ -40,7 +40,7 @@ ifneq ($(V), 0)
 	VERBOSE=-v
 endif
 
-.PHONY: all build program clean
+.PHONY: all config-tools build program stop-serial serial format check clean
 
 all: build
 
@@ -53,7 +53,7 @@ config-tools:
 	$(ARDUINO_CLI) lib install $(LIBRARIES)
 	$(foreach lib, $(GIT_LIBRARIES), $(ARDUINO_CLI) lib install --git-url $(lib);)
 
-build:
+build: format
 	$(ARDUINO_CLI) compile $(VERBOSE) --build-path=$(BUILD_PATH) --build-cache-path=$(BUILD_PATH) -b $(BOARD_TYPE)$(BOARD_OPTIONS) --build-property "compiler.cpp.extra_flags=-D$(HARDWARE)" $(PROJECT_BASE)/$(PROJECT)
 
 program: all stop-serial
@@ -65,8 +65,10 @@ stop-serial:
 serial: stop-serial
 	screen $(SERIAL_PORT) $(BAUDRATE)
 
-check:
+format:
 	clang-format $(SOURCE_PATH)*.ino $(SOURCE_PATH)*.cpp $(SOURCE_PATH)*.h -style=file -i
+
+check: format
 	cppcheck --suppress=missingIncludeSystem --enable=all --std=c++11 --inline-suppr --language=c++ $(SOURCE_PATH)*.ino $(SOURCE_PATH)*.cpp $(SOURCE_PATH)*.h
 
 clean:
