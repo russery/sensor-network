@@ -37,6 +37,7 @@ constexpr char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML><html><head>
   <title>Sensor Node</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="refresh" content="30">
   <style>
     html {
       font-family: Helvetica;

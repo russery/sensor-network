@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "aqi-sensor.h"
 #include "arduino_secrets.h"
 #include "bsp.h"
+#include "loop-timer.h"
 #include "webserver.h"
 #include <ArduinoOTA.h>
 #if defined(ESP32)
@@ -41,10 +42,6 @@ WiFiClient wificlient;
 PubSubClient mqttclient(wificlient);
 
 void (*reset)(void) = 0;
-
-unsigned long time_diff(unsigned long last_ms) {
-  return abs((long long)millis() - (long long)last_ms);
-}
 
 // cppcheck-suppress unusedFunction
 void setup() {
@@ -111,42 +108,76 @@ void setup() {
 }
 
 void loop() {
-  static long last_sensor_ms = millis();
+  sensor.Loop();
+
+  static LoopTimer mqtt_update_timer;
   if (!mqttclient.connected()) {
     mqttclient.connect(webserver.Address);
   } else {
-    if (time_diff(last_sensor_ms) > 10000) {
+    if (mqtt_update_timer.CheckIntervalExceeded(10000) &&
+        !sensor.IsDataStale()) {
       digitalWrite(BSP::LED_PIN, BSP::LED_ON);
-      last_sensor_ms = millis();
-      sensor.Loop();
       char topic[256] = {0};
       char value[16] = {0};
       sprintf(topic, "%s/aqi-pm2p5", webserver.Address);
       sprintf(value, "%4d", sensor.data.pm25_env);
       mqttclient.publish(topic, value);
-      Serial.printf("\r\nPM2.5 %d\r\n", sensor.data.pm25_env);
+      mqtt_update_timer.Reset();
+
+      Serial.println(F("---------------------------------------"));
+      Serial.println(F("Concentration Units (standard)"));
+      Serial.println(F("---------------------------------------"));
+      Serial.print(F("PM 1.0: "));
+      Serial.print(sensor.data.pm10_standard);
+      Serial.print(F("\t\tPM 2.5: "));
+      Serial.print(sensor.data.pm25_standard);
+      Serial.print(F("\t\tPM 10: "));
+      Serial.println(sensor.data.pm100_standard);
+      Serial.println(F("Concentration Units (environmental)"));
+      Serial.println(F("---------------------------------------"));
+      Serial.print(F("PM 1.0: "));
+      Serial.print(sensor.data.pm10_env);
+      Serial.print(F("\t\tPM 2.5: "));
+      Serial.print(sensor.data.pm25_env);
+      Serial.print(F("\t\tPM 10: "));
+      Serial.println(sensor.data.pm100_env);
+      Serial.println(F("---------------------------------------"));
+      Serial.print(F("Particles > 0.3um / 0.1L air:"));
+      Serial.println(sensor.data.particles_03um);
+      Serial.print(F("Particles > 0.5um / 0.1L air:"));
+      Serial.println(sensor.data.particles_05um);
+      Serial.print(F("Particles > 1.0um / 0.1L air:"));
+      Serial.println(sensor.data.particles_10um);
+      Serial.print(F("Particles > 2.5um / 0.1L air:"));
+      Serial.println(sensor.data.particles_25um);
+      Serial.print(F("Particles > 5.0um / 0.1L air:"));
+      Serial.println(sensor.data.particles_50um);
+      Serial.print(F("Particles > 10 um / 0.1L air:"));
+      Serial.println(sensor.data.particles_100um);
+      Serial.println(F("---------------------------------------"));
     }
   }
   mqttclient.loop();
 
   static bool last_button_state = digitalRead(BSP::BUTTON_PIN);
-  static long button_debounce_ms = millis();
+  static LoopTimer button_timer;
   bool button_state = digitalRead(BSP::BUTTON_PIN);
   if (button_state != last_button_state) {
-    button_debounce_ms = millis();
+    button_timer.Reset();
     last_button_state = button_state;
-  } else if ((time_diff(button_debounce_ms) > 5000) &&
+  } else if (button_timer.CheckIntervalExceeded(5000) &&
              (last_button_state == BSP::BUTTON_PRESSED)) {
     webserver.ChangeAddress(Webserver::DEFAULT_ADDRESS);
   }
 
-  // Address has been changed, give a couple of seconds for webpage to be sent
-  // and then reboot.
-  static long address_timer_ms = 0;
+  static LoopTimer address_change_timer;
   if (!webserver.AddressChanged)
-    address_timer_ms = millis();
-  if (time_diff(address_timer_ms) > 2000)
+    address_change_timer.Reset();
+  if (address_change_timer.CheckIntervalExceeded(2000)) {
+    // Address has been changed, give a couple of seconds for webpage to be sent
+    // and then reboot.
     reset();
+  }
 
   webserver.Loop();
   ArduinoOTA.handle();

@@ -1,5 +1,5 @@
 /*
-Includes pin definitions and other hardware-specific things.
+Implements a simple timer for task loops.
 
 Copyright (C) 2021  Robert Ussery
 
@@ -17,21 +17,19 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef __BSP_H
-#define __BSP_H
+#ifndef __LOOP_TIMER_H
+#define __LOOP_TIMER_H
 
-#include <Arduino.h>
+class LoopTimer {
+private:
+  unsigned long last_loop_ms;
 
-class BSP {
 public:
-  static constexpr char LED_PIN PROGMEM = 2;
-  static constexpr char LED_OFF PROGMEM = HIGH;
-  static constexpr char LED_ON PROGMEM = LOW;
-  static constexpr char BUTTON_PIN PROGMEM = 0;
-  static constexpr bool BUTTON_PRESSED PROGMEM = 0;
-  static constexpr HardwareSerial *AQI_SERIAL_PORT PROGMEM = &Serial2;
-  static constexpr char AQI_RESET_PIN PROGMEM = 5;
-  static constexpr char AQI_SET_PIN PROGMEM = 13;
+  LoopTimer(void) { Reset(); }
+  void Reset(void) { last_loop_ms = millis(); }
+  bool CheckIntervalExceeded(unsigned long interval_ms) {
+    return abs((long long)millis() - (long long)last_loop_ms) > interval_ms;
+  }
 };
 
-#endif // __BSP_H
+#endif //__LOOP_TIMER_H
