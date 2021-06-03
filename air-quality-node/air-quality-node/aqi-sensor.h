@@ -47,6 +47,7 @@ public:
 
 private:
   LoopTimer stale_timer_;
+  bool data_valid_ = false;
   static constexpr uint8_t HEADER_BYTE1 PROGMEM = 0x42;
   static constexpr uint8_t HEADER_BYTE2 PROGMEM = 0x4D;
   static constexpr uint8_t PACKET_LENGTH PROGMEM =

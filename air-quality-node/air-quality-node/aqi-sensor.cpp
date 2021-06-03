@@ -101,6 +101,7 @@ void AQISensor::Loop(void) {
       if (checksum == checksum_received) {
         memcpy((void *)&data, (void *)buffer, PACKET_LENGTH - 4);
         stale_timer_.Reset();
+        data_valid_ = true;
       }
       state = SensorState::RESET_LOW;
     }
@@ -109,5 +110,5 @@ void AQISensor::Loop(void) {
 }
 
 bool AQISensor::IsDataStale(unsigned long stale_ms) {
-  return stale_timer_.CheckIntervalExceeded(stale_ms);
+  return stale_timer_.CheckIntervalExceeded(stale_ms) && data_valid_;
 }

@@ -124,7 +124,7 @@ void loop() {
       mqttclient.publish(topic, value);
       mqtt_update_timer.Reset();
 
-      Serial.println(F("---------------------------------------"));
+      Serial.println(F("-------------------------------------------------"));
       Serial.println(F("Concentration Units (standard)"));
       Serial.println(F("---------------------------------------"));
       Serial.print(F("PM 1.0: "));
@@ -154,7 +154,7 @@ void loop() {
       Serial.println(sensor.data.particles_50um);
       Serial.print(F("Particles > 10 um / 0.1L air:"));
       Serial.println(sensor.data.particles_100um);
-      Serial.println(F("---------------------------------------"));
+      Serial.println();
     }
   }
   mqttclient.loop();

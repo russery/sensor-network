@@ -24,9 +24,9 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 class BSP {
 public:
-  static constexpr char LED_PIN PROGMEM = 16;
-  static constexpr char LED_OFF PROGMEM = HIGH;
-  static constexpr char LED_ON PROGMEM = LOW;
+  static constexpr char LED_PIN PROGMEM = 2;
+  static constexpr char LED_OFF PROGMEM = LOW;
+  static constexpr char LED_ON PROGMEM = HIGH;
   static constexpr char DHT11_DATA_PIN PROGMEM = 14;
   static constexpr char BUTTON_PIN PROGMEM = 0;
   static constexpr bool BUTTON_PRESSED PROGMEM = 0;
