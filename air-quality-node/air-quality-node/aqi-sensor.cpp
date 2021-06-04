@@ -32,7 +32,9 @@ void AQISensor::Loop(void) {
   enum class SensorState {
     RESET_LOW,
     WAIT_RESET,
-    WAIT_BOOT,
+    CHANGE_SERIAL_MODE,
+    WAIT_WARMUP,
+    REQUEST_PACKET,
     WAIT_PACKET,
     PARSE_BODY
   };
@@ -48,23 +50,49 @@ void AQISensor::Loop(void) {
   case SensorState::WAIT_RESET:
     if (timer.CheckIntervalExceeded(100)) {
       digitalWrite(BSP::AQI_RESET_PIN, 1);
-      state = SensorState::WAIT_BOOT;
+      state = SensorState::CHANGE_SERIAL_MODE;
       timer.Reset();
     }
     break;
-  case SensorState::WAIT_BOOT:
+  case SensorState::CHANGE_SERIAL_MODE:
+    if (timer.CheckIntervalExceeded(1000)) {
+      // After waiting a second for the sensor to come out of reset, send mode
+      // change command to switch to passive (polled) serial mode:
+      uint8_t cmd_str[] = {HEADER_BYTE1,
+                           HEADER_BYTE2,
+                           CMD_CHANGE_MODE,
+                           0x00,
+                           SERIAL_MODE_PASSIVE,
+                           CMD_SERIAL_MODE_PASSIVE_CHECKSUM >> 8,
+                           CMD_SERIAL_MODE_PASSIVE_CHECKSUM};
+      BSP::AQI_SERIAL_PORT->write(cmd_str,
+                                  sizeof(cmd_str) / sizeof(cmd_str[0]));
+      state = SensorState::WAIT_WARMUP;
+      timer.Reset();
+    }
+    break;
+  case SensorState::WAIT_WARMUP:
+    // Datasheet recommends:
+    // "Stable data should be got at least 30 seconds after the sensor wakeup
+    // from the sleep mode because of the fan’s performance"
     if (timer.CheckIntervalExceeded(30000)) {
-      // Datasheet recommends:
-      // "Stable data should be got at least 30 seconds after the sensor wakeup
-      // from the sleep mode because of the fan’s performance"
-      state = SensorState::WAIT_PACKET;
       while (BSP::AQI_SERIAL_PORT->read() != -1)
         ; // Flush receive buffer
-      timer.Reset();
+      state = SensorState::REQUEST_PACKET;
     }
     break;
+  case SensorState::REQUEST_PACKET: {
+    uint8_t cmd_str[] = {
+        HEADER_BYTE1, HEADER_BYTE2,           CMD_READ,         0x00,
+        0x00,         CMD_READ_CHECKSUM >> 8, CMD_READ_CHECKSUM};
+    BSP::AQI_SERIAL_PORT->write(cmd_str, sizeof(cmd_str) / sizeof(cmd_str[0]));
+    state = SensorState::WAIT_PACKET;
+    timer.Reset();
+    break;
+  }
   case SensorState::WAIT_PACKET:
-    if (timer.CheckIntervalExceeded(1000)) {
+    if (timer.CheckIntervalExceeded(5000)) {
+      // Sensor not responding, so reset it.
       state = SensorState::RESET_LOW;
     } else if (BSP::AQI_SERIAL_PORT->available() >= PACKET_LENGTH) {
       int16_t read_byte;
@@ -103,7 +131,7 @@ void AQISensor::Loop(void) {
         stale_timer_.Reset();
         data_valid_ = true;
       }
-      state = SensorState::RESET_LOW;
+      state = SensorState::REQUEST_PACKET;
     }
     break;
   }

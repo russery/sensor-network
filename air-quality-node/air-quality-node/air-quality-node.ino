@@ -114,7 +114,7 @@ void loop() {
   if (!mqttclient.connected()) {
     mqttclient.connect(webserver.Address);
   } else {
-    if (mqtt_update_timer.CheckIntervalExceeded(10000) &&
+    if (mqtt_update_timer.CheckIntervalExceeded(5000) &&
         !sensor.IsDataStale()) {
       digitalWrite(BSP::LED_PIN, BSP::LED_ON);
       char topic[256] = {0};

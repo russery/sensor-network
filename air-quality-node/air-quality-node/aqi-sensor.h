@@ -48,10 +48,19 @@ public:
 private:
   LoopTimer stale_timer_;
   bool data_valid_ = false;
+
+  // PMS5003 protocol definition:
   static constexpr uint8_t HEADER_BYTE1 PROGMEM = 0x42;
   static constexpr uint8_t HEADER_BYTE2 PROGMEM = 0x4D;
   static constexpr uint8_t PACKET_LENGTH PROGMEM =
       28; // Packet length without header bytes
+  static constexpr uint8_t CMD_READ PROGMEM = 0xE2;
+  static constexpr uint8_t CMD_CHANGE_MODE = 0xE1;
+  static constexpr uint8_t SERIAL_MODE_PASSIVE = 0x00;
+  static constexpr uint16_t CMD_SERIAL_MODE_PASSIVE_CHECKSUM PROGMEM =
+      HEADER_BYTE1 + HEADER_BYTE2 + CMD_CHANGE_MODE + SERIAL_MODE_PASSIVE;
+  static constexpr uint16_t CMD_READ_CHECKSUM =
+      HEADER_BYTE1 + HEADER_BYTE2 + CMD_READ;
 };
 
 #endif //__TEMP_SENSOR_H
