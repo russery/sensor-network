@@ -18,14 +18,24 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
 #include "webserver.h"
+#if defined(ESP32)
+#include <AsyncTCP.h>
+#include <WiFi.h>
+#include <esp_spiffs.h>
+#include <esp_task_wdt.h>
+#include <mdns.h>
+#include <sys/stat.h>
+#elif defined(ESP8266)
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
 #include <ESPAsyncTCP.h>
+#include <FS.h>
+#endif // ESP32 / ESP8266
 
 namespace {
 constexpr char index_html[] PROGMEM = R"rawliteral(
 <!DOCTYPE HTML><html><head>
-  <title>Temp Monitor</title>
+  <title>Sensor Node</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta http-equiv="refresh" content="30">
   <style>
@@ -47,9 +57,8 @@ constexpr char index_html[] PROGMEM = R"rawliteral(
   </style>
 </head>
 <body>
-  <h2>TEMP NETWORK</h2>
-  <p>Temperature: %TEMP%</p>
-  <p>Humidity:    %HUM%</p>
+  <h2>SENSOR NODE</h2>
+  <p>PM2.5 &mu;g/m3: %PM25%</p>
   <div class="uptime">%UPTIME%</div></p>
   <form method="post" action="/post">
     <label for="name">Node Name:</label>
@@ -62,13 +71,13 @@ constexpr char index_html[] PROGMEM = R"rawliteral(
 }
 
 String Webserver::WebpageProcessor_(const String &var) {
-  if (var == "TEMP") {
+  if (var == "PM25") {
     char buff[16] = {0};
-    sprintf(buff, "%4.1f&deg;F", sensor_->TemperatureFahrenheit);
-    return String(buff);
-  } else if (var == "HUM") {
-    char buff[16] = {0};
-    sprintf(buff, "%4.1f&percnt;", sensor_->HumidityPercent);
+    if (!sensor_->IsDataStale()) {
+      sprintf(buff, "%4d", sensor_->data.pm25_env);
+    } else {
+      sprintf(buff, "invalid");
+    }
     return String(buff);
   } else if (var == "UPTIME") {
     char buff[128] = {0};
@@ -100,6 +109,34 @@ void Webserver::HandlePagePost_(AsyncWebServerRequest *request) {
 }
 
 void Webserver::Start(void) {
+#if defined(ESP32)
+  // Start up flash filesystem and initialize config
+  esp_vfs_spiffs_conf_t conf = {.base_path = "",
+                                .partition_label = NULL,
+                                .max_files = 5,
+                                .format_if_mount_failed = true};
+  // Change the task watchdog timer to 60s to allow plenty of time for SPIFFS
+  // flash file system initialization if necessary
+  esp_task_wdt_init(60, true);
+  esp_vfs_spiffs_register(&conf);
+  esp_task_wdt_init(1, true); // Change watchdog back to something reasonable
+  struct stat st;
+  if (stat(MDNS_FILE, &st) == 0) {
+    FILE *mdns_file_handle = fopen(MDNS_FILE, "r");
+    fgets(Address, Webserver::ADDRESS_LEN_MAX, mdns_file_handle);
+    fclose(mdns_file_handle);
+    // char* pos = strchr(Address, "\n"); // strip newline
+    // if (pos) *pos = "\0";
+    Serial.printf("\r\nUsing MDNS Address from flash: %s.local", Address);
+  } else {
+    memcpy(Address, Webserver::DEFAULT_ADDRESS,
+           strlen(Webserver::DEFAULT_ADDRESS));
+    Serial.printf("\r\nUsing MDNS Address: %s.local", Address);
+  }
+  mdns_init();
+  mdns_hostname_set(Address);
+  mdns_service_add(NULL, "_http", "_tcp", 80, NULL, 0);
+#elif defined(ESP8266)
   SPIFFS.begin();
   if (SPIFFS.exists(MDNS_FILE)) {
     File mdns_file_handle = SPIFFS.open(MDNS_FILE, "r");
@@ -115,7 +152,7 @@ void Webserver::Start(void) {
   }
   MDNS.begin(Address);
   MDNS.addService("http", "tcp", 80);
-
+#endif
   server_.on("/", [&](AsyncWebServerRequest *request) {
     request->send_P(200, "text/html", index_html,
                     [&](const String &var) -> String {
@@ -134,14 +171,25 @@ void Webserver::Start(void) {
   server_.begin();
 }
 
-void Webserver::Loop(void) { MDNS.update(); }
+void Webserver::Loop(void) {
+#if defined(ESP8266)
+  MDNS.update();
+#endif
+}
 
 void Webserver::ChangeAddress(const char new_address[]) {
-  SPIFFS.remove(MDNS_FILE);
-  File mdns_file_handle = SPIFFS.open(MDNS_FILE, "w");
   memset(Address, 0, Webserver::ADDRESS_LEN_MAX);
   sprintf(Address, "%s%s", Webserver::ADDRESS_BASE, new_address);
+#if defined(ESP32)
+  unlink(MDNS_FILE);
+  FILE *mdns_file_handle = fopen(MDNS_FILE, "w");
+  fprintf(mdns_file_handle, Address);
+  fclose(mdns_file_handle);
+#elif defined(ESP8266)
+  SPIFFS.remove(MDNS_FILE);
+  File mdns_file_handle = SPIFFS.open(MDNS_FILE, "w");
   mdns_file_handle.print(Address);
   mdns_file_handle.close();
+#endif
   AddressChanged = true;
 }
