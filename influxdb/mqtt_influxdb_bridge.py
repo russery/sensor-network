@@ -7,12 +7,19 @@ INFLUXDB_ADDRESS = "localhost"
 INFLUXDB_USER = "mqtt"
 INFLUXDB_PASSWORD = "mqtt_pass"
 INFLUXDB_DATABASE = "home_sensors"
+INFLUX_DB_WRITE_INTERVAL_S = 60
 
 MQTT_ADDRESS = "localhost"
 MQTT_USER = ""
 MQTT_PASSWORD = ""
 MQTT_TOPIC = "+/+"
 MQTT_CLIENT_ID = "MQTTInfluxDBBridge"
+
+MSG_DICT = {
+    "temperature": on_temperature,
+    "humidity": on_humidity,
+    "aqi-pm": on_aqi
+}
 
 influxdb_client = InfluxDBClient(INFLUXDB_ADDRESS, 8086, INFLUXDB_USER, INFLUXDB_PASSWORD, None)
 
@@ -47,7 +54,10 @@ def _send_sensor_data_to_influxdb(sensor_data):
             }
         }
     ]
-    influxdb_client.write_points(json_body)
+    try:
+        influxdb_client.write_points(json_body)
+    except influxdb.exceptions.InfluxDBServerError as e:
+        print(e)
 
 def on_message(client, userdata, msg):
     """The callback for when a PUBLISH message is received from the server."""
@@ -71,10 +81,17 @@ def main():
     mqtt_client.on_message = on_message
 
     mqtt_client.connect(MQTT_ADDRESS, 1883)
-    mqtt_client.loop_forever()
+    mqtt_client.loop_start()
+    next_time = time.time() + INFLUX_DB_WRITE_INTERVAL_S
+    running = True
+    while running:
+        # InfluxDB writing loop
+        # Sleep until next time
+        time.sleep(max(0, next_time - time.time()))
+        next_time = time.time() + INFLUX_DB_WRITE_INTERVAL_S
 
+    mqtt_client.loop_stop()
 
 if __name__ == "__main__":
     print("MQTT to InfluxDB bridge")
-    print("New and improved!")
     main()
