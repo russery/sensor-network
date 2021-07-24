@@ -85,11 +85,9 @@ void setup() {
   });
   ArduinoOTA.begin();
 
-  Serial.printf("\r\nQuery A: %s", MQTT_SERVER);
-
+  // Get IP address of MQTT server:
   struct ip4_addr addr;
   addr.addr = 0;
-
   char server_copy[sizeof(MQTT_SERVER)];
   memcpy(server_copy, MQTT_SERVER, sizeof(MQTT_SERVER));
   // Get part of server name before TLD, assumes no subdomain:
@@ -105,7 +103,6 @@ void setup() {
   }
   char addr_str[16];
   sprintf(addr_str, IPSTR, IP2STR(&addr));
-  Serial.println(addr_str);
 
   sensor.Start();
   mqttclient.setServer(addr_str, 1883);
@@ -119,7 +116,7 @@ void loop() {
     mqttclient.connect(webserver.Address);
   } else {
     if (mqtt_update_timer.CheckIntervalExceeded(5000) &&
-        !sensor.IsDataStale()) {
+        !sensor.AreDataStale()) {
       digitalWrite(BSP::LED_PIN, BSP::LED_ON);
       char topic[256] = {0};
       char value[16] = {0};
