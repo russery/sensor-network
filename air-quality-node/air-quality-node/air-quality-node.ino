@@ -90,7 +90,11 @@ void setup() {
   struct ip4_addr addr;
   addr.addr = 0;
 
-  esp_err_t err = mdns_query_a("printer", 2000, &addr);
+  char server_copy[sizeof(MQTT_SERVER)];
+  memcpy(server_copy, MQTT_SERVER, sizeof(MQTT_SERVER));
+  // Get part of server name before TLD, assumes no subdomain:
+  char *server_no_tld = strtok(server_copy, ".");
+  esp_err_t err = mdns_query_a(server_no_tld, 2000, &addr);
   if (err) {
     if (err == ESP_ERR_NOT_FOUND) {
       printf("Host was not found!");
