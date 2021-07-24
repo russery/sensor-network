@@ -175,6 +175,8 @@ void loop() {
       Serial.print(F("Particles > 10 um / 0.1L air:"));
       Serial.println(sensor.data.particles_100um);
       Serial.println();
+    } else {
+      Serial.printf("\r\n%5d  Stale: %d", mqtt_update_timer.GetCurrentValueMs(), sensor.AreDataStale());
     }
   }
   mqttclient.loop();
