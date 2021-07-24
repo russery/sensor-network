@@ -113,6 +113,7 @@ void loop() {
 
   static LoopTimer mqtt_update_timer;
   if (!mqttclient.connected()) {
+    Serial.println("Lost connection... reconnecting");
     mqttclient.connect(webserver.Address);
   } else {
     if (mqtt_update_timer.CheckIntervalExceeded(5000) &&
@@ -181,6 +182,7 @@ void loop() {
   }
   mqttclient.loop();
 
+  // Handle button presses (used to reset mdns address to default):
   static bool last_button_state = digitalRead(BSP::BUTTON_PIN);
   static LoopTimer button_timer;
   bool button_state = digitalRead(BSP::BUTTON_PIN);
@@ -192,6 +194,7 @@ void loop() {
     webserver.ChangeAddress(Webserver::DEFAULT_ADDRESS);
   }
 
+  // Handle reboot if user changes mdns address from webpage:
   static LoopTimer address_change_timer;
   if (!webserver.AddressChanged)
     address_change_timer.Reset();
