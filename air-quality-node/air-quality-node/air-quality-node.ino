@@ -152,24 +152,19 @@ void loop() {
       mqttclient.publish(topic, value);
       mqtt_update_timer.Reset();
 
-      Serial.println(F("-------------------------------------------------"));
-      Serial.println(F("Concentration Units (standard)"));
-      Serial.println(F("---------------------------------------"));
-      Serial.print(F("PM 1.0: "));
-      Serial.print(sensor.data.pm10_standard);
-      Serial.print(F("\t\tPM 2.5: "));
-      Serial.print(sensor.data.pm25_standard);
-      Serial.print(F("\t\tPM 10: "));
-      Serial.println(sensor.data.pm100_standard);
+      Serial.println(
+          F("---------------------------------------------------------"));
       Serial.println(F("Concentration Units (environmental)"));
-      Serial.println(F("---------------------------------------"));
+      Serial.println(
+          F("---------------------------------------------------------"));
       Serial.print(F("PM 1.0: "));
       Serial.print(sensor.data.pm10_env);
-      Serial.print(F("\t\tPM 2.5: "));
+      Serial.print(F("\tPM 2.5: "));
       Serial.print(sensor.data.pm25_env);
-      Serial.print(F("\t\tPM 10: "));
+      Serial.print(F("\tPM 10: "));
       Serial.println(sensor.data.pm100_env);
-      Serial.println(F("---------------------------------------"));
+      Serial.println(
+          F("---------------------------------------------------------"));
       Serial.print(F("Particles > 0.3um / 0.1L air:"));
       Serial.println(sensor.data.particles_03um);
       Serial.print(F("Particles > 0.5um / 0.1L air:"));
