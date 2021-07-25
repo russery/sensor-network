@@ -15,11 +15,11 @@ MQTT_PASSWORD = ""
 MQTT_TOPIC = "+/+"
 MQTT_CLIENT_ID = "MQTTInfluxDBBridge"
 
-# MSG_DICT = {
-#     "temperature": on_temperature,
-#     "humidity": on_humidity,
-#     "aqi-pm": on_aqi
-# }
+MSG_DICT = {
+    "temperature": on_temperature,
+    "humidity": on_humidity,
+    "aqi-pm": on_aqi
+}
 
 influxdb_client = InfluxDBClient(INFLUXDB_ADDRESS, 8086, INFLUXDB_USER, INFLUXDB_PASSWORD, None)
 
@@ -28,10 +28,14 @@ class SensorData(NamedTuple):
     measurement: str
     value: float
 
-def on_connect(client, userdata, flags, rc):
-    """ The callback for when the client receives a CONNACK response from the server."""
-    print("Connected with result code " + str(rc))
-    client.subscribe(MQTT_TOPIC)
+def on_temperature(name, payload):
+    pass
+
+def on_humidity(name, payload):
+    pass
+
+def on_aqi(name, payload):
+    pass
 
 def _parse_mqtt_message(topic, payload):
     if "sensor-" in topic:
@@ -59,6 +63,12 @@ def _send_sensor_data_to_influxdb(sensor_data):
     except influxdb.exceptions.InfluxDBServerError as e:
         print(e)
 
+
+def on_connect(client, userdata, flags, rc):
+    """ The callback for when the client receives a CONNACK response from the server."""
+    print("Connected with result code " + str(rc))
+    client.subscribe(MQTT_TOPIC)
+
 def on_message(client, userdata, msg):
     """The callback for when a PUBLISH message is received from the server."""
     print(msg.topic + " " + str(msg.payload))
@@ -66,14 +76,11 @@ def on_message(client, userdata, msg):
     if sensor_data is not None:
         _send_sensor_data_to_influxdb(sensor_data)
 
-def _init_influxdb_database():
+def main():
     databases = influxdb_client.get_list_database()
     if len(list(filter(lambda x: x["name"] == INFLUXDB_DATABASE, databases))) == 0:
         influxdb_client.create_database(INFLUXDB_DATABASE)
     influxdb_client.switch_database(INFLUXDB_DATABASE)
-
-def main():
-    _init_influxdb_database()
 
     mqtt_client = mqtt.Client(MQTT_CLIENT_ID)
     mqtt_client.username_pw_set(MQTT_USER, MQTT_PASSWORD)
