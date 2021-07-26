@@ -1,7 +1,7 @@
 from typing import NamedTuple
 import time
 import paho.mqtt.client as mqtt
-from influxdb import InfluxDBClient
+from influxdb import InfluxDBClient, exceptions
 
 INFLUXDB_ADDRESS = "localhost"
 INFLUXDB_USER = "mqtt"
@@ -58,7 +58,11 @@ def _send_sensor_data_to_influxdb(sensor_data):
             }
         }
     ]
-    influxdb_client.write_points(json_body)
+    try:
+        influxdb_client.write_points(json_body)
+    except exceptions.InfluxDBServerError as e:
+        print(e)
+
 
 def on_connect(client, userdata, flags, rc):
     """ The callback for when the client receives a CONNACK response from the server."""
