@@ -119,6 +119,7 @@ void loop() {
       Serial.print(mqttclient.state());
       Serial.print("\r\n");
       delay(5000); // Wait 5sec before trying again
+      wificlient.stop();
     }
   } else {
     if (mqtt_update_timer.CheckIntervalExceeded(5000) &&
