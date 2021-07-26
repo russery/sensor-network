@@ -15,11 +15,11 @@ MQTT_PASSWORD = ""
 MQTT_TOPIC = "+/+"
 MQTT_CLIENT_ID = "MQTTInfluxDBBridge"
 
-MSG_DICT = {
-    "temperature": on_temperature,
-    "humidity": on_humidity,
-    "aqi-pm": on_aqi
-}
+# MSG_DICT = {
+#     "temperature": on_temperature,
+#     "humidity": on_humidity,
+#     "aqi-pm": on_aqi
+# }
 
 influxdb_client = InfluxDBClient(INFLUXDB_ADDRESS, 8086, INFLUXDB_USER, INFLUXDB_PASSWORD, None)
 
