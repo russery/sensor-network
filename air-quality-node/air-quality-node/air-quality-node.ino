@@ -113,8 +113,13 @@ void loop() {
 
   static LoopTimer mqtt_update_timer;
   if (!mqttclient.connected()) {
-    Serial.println("Lost connection... reconnecting");
-    mqttclient.connect(webserver.Address);
+    Serial.println("\r\nNo MQTT connection... connecting");
+    if(!mqttclient.connect(webserver.Address)) {
+      Serial.print("\r\nConnection failed, State = ");
+      Serial.print(mqttclient.state());
+      Serial.print("\r\n");
+      delay(5000); // Wait 5sec before trying again
+    }
   } else {
     if (mqtt_update_timer.CheckIntervalExceeded(5000) &&
         !sensor.AreDataStale()) {
@@ -176,8 +181,6 @@ void loop() {
       Serial.print(F("Particles > 10 um / 0.1L air:"));
       Serial.println(sensor.data.particles_100um);
       Serial.println();
-    } else {
-      Serial.printf("\r\n%5d  Stale: %d", mqtt_update_timer.GetCurrentValueMs(), sensor.AreDataStale());
     }
   }
   mqttclient.loop();

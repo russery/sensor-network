@@ -83,7 +83,6 @@ void AQISensor::Loop(void) {
     }
     break;
   case SensorState::REQUEST_PACKET: {
-    Serial.println("\r\nRequest sensor reading");
     uint8_t cmd_str[] = {
         HEADER_BYTE1, HEADER_BYTE2,           CMD_READ,         0x00,
         0x00,         CMD_READ_CHECKSUM >> 8, CMD_READ_CHECKSUM};
@@ -104,7 +103,6 @@ void AQISensor::Loop(void) {
       } while ((read_byte != -1) && (read_byte != HEADER_BYTE1));
       if (read_byte == HEADER_BYTE1) {
         if (BSP::AQI_SERIAL_PORT->read() == HEADER_BYTE2) {
-          Serial.println("\r\nReceived header");
           state = SensorState::PARSE_BODY;
         }
       }
@@ -133,7 +131,6 @@ void AQISensor::Loop(void) {
       uint16_t checksum_received = (uint16_t)(d[0] << 8) + d[1];
       if (checksum == checksum_received) {
         memcpy((void *)&data, (void *)buffer, PACKET_LENGTH - 4);
-        Serial.println("\r\nValid packet received");
         stale_timer_.Reset();
         data_valid_ = true;
       } else {
