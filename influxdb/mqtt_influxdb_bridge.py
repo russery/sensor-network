@@ -58,11 +58,7 @@ def _send_sensor_data_to_influxdb(sensor_data):
             }
         }
     ]
-    try:
-        influxdb_client.write_points(json_body)
-    except influxdb.exceptions.InfluxDBServerError as e:
-        print(e)
-
+    influxdb_client.write_points(json_body)
 
 def on_connect(client, userdata, flags, rc):
     """ The callback for when the client receives a CONNACK response from the server."""
