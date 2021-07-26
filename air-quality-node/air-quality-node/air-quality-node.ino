@@ -118,8 +118,8 @@ void loop() {
       Serial.print("\r\nConnection failed, State = ");
       Serial.print(mqttclient.state());
       Serial.print("\r\n");
-      delay(5000); // Wait 5sec before trying again
-      wificlient.stop();
+      // HACK: Client reconnect never seems to work without a reboot, so just reboot:
+      reset();
     }
   } else {
     if (mqtt_update_timer.CheckIntervalExceeded(5000) &&
