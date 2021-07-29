@@ -92,7 +92,7 @@ void AQISensor::Loop(void) {
     break;
   }
   case SensorState::WAIT_PACKET:
-    if (timer.CheckIntervalExceeded(1000)) {
+    if (timer.CheckIntervalExceeded(2000)) {
       // Sensor not responding, so reset it.
       state = SensorState::RESET_LOW;
       Serial.println("\r\nSensor response timed out... resetting sensor");
