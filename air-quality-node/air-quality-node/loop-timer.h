@@ -30,6 +30,9 @@ public:
   bool CheckIntervalExceeded(unsigned long interval_ms) {
     return abs((long long)millis() - (long long)last_loop_ms) > interval_ms;
   }
+  unsigned long GetCurrentValueMs(void) {
+    return (unsigned long)abs((long long)millis() - (long long)last_loop_ms);
+  }
 };
 
 #endif //__LOOP_TIMER_H

@@ -85,12 +85,14 @@ void setup() {
   });
   ArduinoOTA.begin();
 
-  Serial.printf("\r\nQuery A: %s", MQTT_SERVER);
-
+  // Get IP address of MQTT server:
   struct ip4_addr addr;
   addr.addr = 0;
-
-  esp_err_t err = mdns_query_a("printer", 2000, &addr);
+  char server_copy[sizeof(MQTT_SERVER)];
+  memcpy(server_copy, MQTT_SERVER, sizeof(MQTT_SERVER));
+  // Get part of server name before TLD, assumes no subdomain:
+  char *server_no_tld = strtok(server_copy, ".");
+  esp_err_t err = mdns_query_a(server_no_tld, 2000, &addr);
   if (err) {
     if (err == ESP_ERR_NOT_FOUND) {
       printf("Host was not found!");
@@ -101,7 +103,6 @@ void setup() {
   }
   char addr_str[16];
   sprintf(addr_str, IPSTR, IP2STR(&addr));
-  Serial.println(addr_str);
 
   sensor.Start();
   mqttclient.setServer(addr_str, 1883);
@@ -112,10 +113,17 @@ void loop() {
 
   static LoopTimer mqtt_update_timer;
   if (!mqttclient.connected()) {
-    mqttclient.connect(webserver.Address);
+    Serial.println("\r\nNo MQTT connection... connecting");
+    if(!mqttclient.connect(webserver.Address)) {
+      Serial.print("\r\nConnection failed, State = ");
+      Serial.print(mqttclient.state());
+      Serial.print("\r\n");
+      // HACK: Client reconnect never seems to work without a reboot, so just reboot:
+      reset();
+    }
   } else {
     if (mqtt_update_timer.CheckIntervalExceeded(5000) &&
-        !sensor.IsDataStale()) {
+        !sensor.AreDataStale()) {
       digitalWrite(BSP::LED_PIN, BSP::LED_ON);
       char topic[256] = {0};
       char value[16] = {0};
@@ -148,24 +156,19 @@ void loop() {
       mqttclient.publish(topic, value);
       mqtt_update_timer.Reset();
 
-      Serial.println(F("-------------------------------------------------"));
-      Serial.println(F("Concentration Units (standard)"));
-      Serial.println(F("---------------------------------------"));
-      Serial.print(F("PM 1.0: "));
-      Serial.print(sensor.data.pm10_standard);
-      Serial.print(F("\t\tPM 2.5: "));
-      Serial.print(sensor.data.pm25_standard);
-      Serial.print(F("\t\tPM 10: "));
-      Serial.println(sensor.data.pm100_standard);
+      Serial.println(
+          F("---------------------------------------------------------"));
       Serial.println(F("Concentration Units (environmental)"));
-      Serial.println(F("---------------------------------------"));
+      Serial.println(
+          F("---------------------------------------------------------"));
       Serial.print(F("PM 1.0: "));
       Serial.print(sensor.data.pm10_env);
-      Serial.print(F("\t\tPM 2.5: "));
+      Serial.print(F("\tPM 2.5: "));
       Serial.print(sensor.data.pm25_env);
-      Serial.print(F("\t\tPM 10: "));
+      Serial.print(F("\tPM 10: "));
       Serial.println(sensor.data.pm100_env);
-      Serial.println(F("---------------------------------------"));
+      Serial.println(
+          F("---------------------------------------------------------"));
       Serial.print(F("Particles > 0.3um / 0.1L air:"));
       Serial.println(sensor.data.particles_03um);
       Serial.print(F("Particles > 0.5um / 0.1L air:"));
@@ -183,6 +186,7 @@ void loop() {
   }
   mqttclient.loop();
 
+  // Handle button presses (used to reset mdns address to default):
   static bool last_button_state = digitalRead(BSP::BUTTON_PIN);
   static LoopTimer button_timer;
   bool button_state = digitalRead(BSP::BUTTON_PIN);
@@ -194,6 +198,7 @@ void loop() {
     webserver.ChangeAddress(Webserver::DEFAULT_ADDRESS);
   }
 
+  // Handle reboot if user changes mdns address from webpage:
   static LoopTimer address_change_timer;
   if (!webserver.AddressChanged)
     address_change_timer.Reset();
