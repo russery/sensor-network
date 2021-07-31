@@ -107,6 +107,7 @@ void setup() {
   sprintf(addr_str, IPSTR, IP2STR(&addr));
 
   display.Start();
+  display.WriteText("Warming Up...");
   sensor.Start();
   mqttclient.setServer(addr_str, 1883);
 }
@@ -129,7 +130,6 @@ void loop() {
     if (mqtt_update_timer.CheckIntervalExceeded(5000) &&
         !sensor.AreDataStale()) {
       display.Update(sensor.data.pm25_env);
-      digitalWrite(BSP::LED_PIN, BSP::LED_ON);
       char topic[256] = {0};
       char value[16] = {0};
       sprintf(topic, "%s/aqi-pm1p0", webserver.Address);
@@ -215,8 +215,6 @@ void loop() {
 
   webserver.Loop();
   ArduinoOTA.handle();
-
-  digitalWrite(BSP::LED_PIN, BSP::LED_OFF);
 
   yield(); // Make sure WiFi can do its thing.
 }

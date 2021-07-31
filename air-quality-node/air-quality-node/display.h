@@ -53,4 +53,5 @@ public:
   void Start(void);
   void DrawGraphTicks(void);
   void Update(uint16_t value);
+  void WriteText(char *text);
 };

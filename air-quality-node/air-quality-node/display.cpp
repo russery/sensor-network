@@ -28,15 +28,12 @@ void Display::Start(void) {
           SSD1306_SWITCHCAPVCC, // Generate display voltage from 3.3V internally
           SCREEN_ADDRESS,
           false, // reset = false; no hardware reset
-          false // periphBegin = false; Wire.begin() is handled by the Display()
-                // class
+          false  // periphBegin = false; Wire.begin() is handled above
           )) {
     Serial.println(F("SSD1306 allocation failed"));
     return;
   }
 
-  // Show initial display buffer contents on the screen --
-  // the library initializes this with an Adafruit splash screen.
   display_.dim(true);
   display_.setTextSize(2);
   display_.setTextColor(SSD1306_WHITE);
@@ -45,8 +42,14 @@ void Display::Start(void) {
   display_.display();
 }
 
-void Display::DrawGraphTicks(void) {
+void Display::WriteText(char *text) {
   display_.clearDisplay();
+  display_.setCursor(0, 0);
+  display_.write(text);
+  display_.display();
+}
+
+void Display::DrawGraphTicks(void) {
   // Draw vertical axis from bottom of screen:
   for (int y = SCREEN_HEIGHT - 1; y > (SCREEN_HEIGHT - 1 - GRAPH_HEIGHT);
        y -= GRAPH_TICK_INTERVAL_Y) {
@@ -83,21 +86,20 @@ void Display::Update(uint16_t value) {
       graph_max_value_ =
           max(graph_max_value_, (uint16_t)display_history_.Read(i));
     }
-
-    // Graph all data in buffer:
-    for (int i = 0; i < display_history_.Length(); i++) {
-      uint8_t x = SCREEN_WIDTH - i;
-      uint16_t range = graph_max_value_ - graph_min_value_;
-      range = max(range, (uint16_t)10);
-      uint8_t y = SCREEN_HEIGHT -
-                  min(GRAPH_HEIGHT,
-                      (uint8_t)((uint32_t)GRAPH_HEIGHT *
-                                (display_history_.Read(i) - graph_min_value_) /
-                                (range))) +
-                  1;
-      display_.drawPixel(x, y, SSD1306_WHITE);
-    }
     last_update_time_ = millis();
+  }
+  // Graph all data in buffer:
+  for (int i = 0; i < display_history_.Length(); i++) {
+    uint8_t x = SCREEN_WIDTH - i - 1;
+    uint16_t range = graph_max_value_ - graph_min_value_;
+    range = max(range, (uint16_t)10);
+    uint8_t y =
+        SCREEN_HEIGHT -
+        min(GRAPH_HEIGHT,
+            (uint8_t)((uint32_t)GRAPH_HEIGHT *
+                      (display_history_.Read(i) - graph_min_value_) / range)) -
+        2;
+    display_.drawPixel(x, y, SSD1306_WHITE);
   }
   display_.display();
 }
