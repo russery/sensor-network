@@ -16,10 +16,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
+
 #include "ring-buffer.h"
 #include <Adafruit_SSD1306.h>
 #include <Wire.h>
 
+// cppcheck-suppress noConstructor
 class Display {
 private:
   // Display dimensions:
@@ -36,7 +38,7 @@ private:
   uint32_t sum_values_ = 0;
   uint8_t num_values_ = 0;
   long long last_update_time_ = 0;
-  static constexpr uint32_t GRAPH_UPDATE_PERIOD_MS = 1000 * 5; // 1000 * 60;
+  static constexpr uint32_t GRAPH_UPDATE_PERIOD_MS = 1000 * 60;
 
   RingBuffer<uint8_t> display_history_ = RingBuffer<uint8_t>(SCREEN_WIDTH - 1);
 
