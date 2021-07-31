@@ -97,7 +97,7 @@ void Display::Update(uint16_t value) {
                   1;
       display_.drawPixel(x, y, SSD1306_WHITE);
     }
+    last_update_time_ = millis();
   }
-
   display_.display();
 }
