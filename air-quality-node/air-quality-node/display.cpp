@@ -37,7 +37,7 @@ void Display::Start(void) {
 
   // Show initial display buffer contents on the screen --
   // the library initializes this with an Adafruit splash screen.
-  display_.dim(false);
+  display_.dim(true);
   display_.setTextSize(2);
   display_.setTextColor(SSD1306_WHITE);
   display_.cp437(true); // Use "Code Page 437" font
