@@ -24,6 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 // cppcheck-suppress noConstructor
 class Display {
 private:
+  TwoWire *wire_;
   // Display dimensions:
   static constexpr uint8_t SCREEN_WIDTH PROGMEM = 128;
   static constexpr uint8_t SCREEN_HEIGHT PROGMEM = 32;
@@ -46,10 +47,12 @@ private:
       -1; // Reset pin # (-1 means no reset)
   static constexpr uint8_t SCREEN_ADDRESS =
       0x3C; // 0x3D for 128x64, 0x3C for 128x32
-  Adafruit_SSD1306 display_ =
-      Adafruit_SSD1306(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+  Adafruit_SSD1306 display_;
 
 public:
+  explicit Display(TwoWire *wire) : wire_(wire) {
+    display_ = Adafruit_SSD1306(SCREEN_WIDTH, SCREEN_HEIGHT, wire_, OLED_RESET);
+  };
   void Start(void);
   void DrawGraphTicks(void);
   void Update(uint16_t value);

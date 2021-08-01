@@ -21,9 +21,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "arduino_secrets.h"
 #include "bsp.h"
 #include "display.h"
+#include "environment-sensor.h"
 #include "loop-timer.h"
 #include "webserver.h"
 #include <ArduinoOTA.h>
+#include <Wire.h>
 #if defined(ESP32)
 #include <WiFi.h>
 #include <mdns.h>
@@ -37,7 +39,8 @@ extern const char WIFI_PASSWORD[];
 extern const char OTA_UPDATE_PWD[];
 extern const char MQTT_SERVER[];
 
-Display display;
+Display display(&Wire);
+EnvSensor envsensor(&Wire);
 AQISensor sensor;
 Webserver webserver(&sensor);
 WiFiClient wificlient;
@@ -106,8 +109,12 @@ void setup() {
   char addr_str[16];
   sprintf(addr_str, IPSTR, IP2STR(&addr));
 
+  Wire.begin(BSP::I2C_SDA_PIN, BSP::I2C_SCL_PIN);
   display.Start();
   display.WriteText("Warming Up..........");
+
+  envsensor.Start();
+
   sensor.Start();
   mqttclient.setServer(addr_str, 1883);
 }
