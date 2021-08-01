@@ -107,7 +107,7 @@ void setup() {
   sprintf(addr_str, IPSTR, IP2STR(&addr));
 
   display.Start();
-  display.WriteText("Warming Up...");
+  display.WriteText("Warming Up..........");
   sensor.Start();
   mqttclient.setServer(addr_str, 1883);
 }
