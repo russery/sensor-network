@@ -19,7 +19,7 @@ else ifeq ($(MCU_TYPE), esp32)
 	GIT_LIBRARIES ?= https://github.com/me-no-dev/ESPAsyncWebServer.git https://github.com/me-no-dev/AsyncTCP.git
 	BOARD_OPTIONS ?=
 endif
-LIBRARIES ?= PubSubClient # Add extra libraries in a space-separated list
+LIBRARIES ?= PubSubClient "Adafruit SSD1306" "Adafruit GFX Library"# Add extra libraries in a space-separated list
 
 PROJECT_BASE = air-quality-node
 PROJECT ?= air-quality-node

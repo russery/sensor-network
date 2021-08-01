@@ -1,3 +1,6 @@
+# Mac stuff
+.DS_Store
+
 # Arduino stuff
 arduino_secrets.h
 _build

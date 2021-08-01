@@ -20,6 +20,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "aqi-sensor.h"
 #include "arduino_secrets.h"
 #include "bsp.h"
+#include "display.h"
 #include "loop-timer.h"
 #include "webserver.h"
 #include <ArduinoOTA.h>
@@ -36,6 +37,7 @@ extern const char WIFI_PASSWORD[];
 extern const char OTA_UPDATE_PWD[];
 extern const char MQTT_SERVER[];
 
+Display display;
 AQISensor sensor;
 Webserver webserver(&sensor);
 WiFiClient wificlient;
@@ -104,6 +106,8 @@ void setup() {
   char addr_str[16];
   sprintf(addr_str, IPSTR, IP2STR(&addr));
 
+  display.Start();
+  display.WriteText("Warming Up..........");
   sensor.Start();
   mqttclient.setServer(addr_str, 1883);
 }
@@ -114,17 +118,18 @@ void loop() {
   static LoopTimer mqtt_update_timer;
   if (!mqttclient.connected()) {
     Serial.println("\r\nNo MQTT connection... connecting");
-    if(!mqttclient.connect(webserver.Address)) {
+    if (!mqttclient.connect(webserver.Address)) {
       Serial.print("\r\nConnection failed, State = ");
       Serial.print(mqttclient.state());
       Serial.print("\r\n");
-      // HACK: Client reconnect never seems to work without a reboot, so just reboot:
+      // HACK: Client reconnect never seems to work without a reboot, so just
+      // reboot:
       reset();
     }
   } else {
     if (mqtt_update_timer.CheckIntervalExceeded(5000) &&
         !sensor.AreDataStale()) {
-      digitalWrite(BSP::LED_PIN, BSP::LED_ON);
+      display.Update(sensor.data.pm25_env);
       char topic[256] = {0};
       char value[16] = {0};
       sprintf(topic, "%s/aqi-pm1p0", webserver.Address);
@@ -210,8 +215,6 @@ void loop() {
 
   webserver.Loop();
   ArduinoOTA.handle();
-
-  digitalWrite(BSP::LED_PIN, BSP::LED_OFF);
 
   yield(); // Make sure WiFi can do its thing.
 }
