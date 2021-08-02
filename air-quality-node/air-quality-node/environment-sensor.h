@@ -21,11 +21,21 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <Wire.h>
 
 class EnvSensor {
+  typedef struct {
+    float temperature_C;
+    float temperature_F;
+    float humidity_percent;
+    float pressure_Pa;
+    bool valid;
+  } SensorData_t;
+
 private:
   TwoWire *wire_;
   Adafruit_BME280 bme;
 
 public:
-  explicit EnvSensor(TwoWire *wire) : wire_(wire) {}
+  SensorData_t data;
+  explicit EnvSensor(TwoWire *wire) : wire_(wire) { data.valid = false; }
   void Start(void);
+  void Loop(void);
 };

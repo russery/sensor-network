@@ -1,5 +1,5 @@
 /*
-Implements a temperature/humidity sensor node with a
+Implements an AQI sensor node with a
 branding/configuration webpage and that broadcasts data over MQTT.
 
 Copyright (C) 2021  Robert Ussery
@@ -41,8 +41,8 @@ extern const char MQTT_SERVER[];
 
 Display display(&Wire);
 EnvSensor envsensor(&Wire);
-AQISensor sensor;
-Webserver webserver(&sensor);
+AQISensor aqi_sensor;
+Webserver webserver(&aqi_sensor);
 WiFiClient wificlient;
 PubSubClient mqttclient(wificlient);
 
@@ -115,12 +115,13 @@ void setup() {
 
   envsensor.Start();
 
-  sensor.Start();
+  aqi_sensor.Start();
   mqttclient.setServer(addr_str, 1883);
 }
 
 void loop() {
-  sensor.Loop();
+  aqi_sensor.Loop();
+  envsensor.Loop();
 
   static LoopTimer mqtt_update_timer;
   if (!mqttclient.connected()) {
@@ -133,68 +134,67 @@ void loop() {
       // reboot:
       reset();
     }
-  } else {
-    if (mqtt_update_timer.CheckIntervalExceeded(5000) &&
-        !sensor.AreDataStale()) {
-      display.Update(sensor.data.pm25_env);
-      char topic[256] = {0};
-      char value[16] = {0};
+  } else if (mqtt_update_timer.CheckIntervalExceeded(5000)) {
+    char topic[256] = {0};
+    char value[16] = {0};
+    if (!aqi_sensor.AreDataStale()) {
+      display.Update(aqi_sensor.data.pm25_env);
+
       sprintf(topic, "%s/aqi-pm1p0", webserver.Address);
-      sprintf(value, "%4d", sensor.data.pm10_env);
+      sprintf(value, "%4d", aqi_sensor.data.pm10_env);
       mqttclient.publish(topic, value);
       sprintf(topic, "%s/aqi-pm2p5", webserver.Address);
-      sprintf(value, "%4d", sensor.data.pm25_env);
+      sprintf(value, "%4d", aqi_sensor.data.pm25_env);
       mqttclient.publish(topic, value);
       sprintf(topic, "%s/aqi-pm10", webserver.Address);
-      sprintf(value, "%4d", sensor.data.pm100_env);
+      sprintf(value, "%4d", aqi_sensor.data.pm100_env);
       mqttclient.publish(topic, value);
       sprintf(topic, "%s/aqi-particles_0p3um", webserver.Address);
-      sprintf(value, "%4d", sensor.data.particles_03um);
+      sprintf(value, "%4d", aqi_sensor.data.particles_03um);
       mqttclient.publish(topic, value);
       sprintf(topic, "%s/aqi-particles_0p5um", webserver.Address);
-      sprintf(value, "%4d", sensor.data.particles_05um);
+      sprintf(value, "%4d", aqi_sensor.data.particles_05um);
       mqttclient.publish(topic, value);
       sprintf(topic, "%s/aqi-particles_1p0um", webserver.Address);
-      sprintf(value, "%4d", sensor.data.particles_10um);
+      sprintf(value, "%4d", aqi_sensor.data.particles_10um);
       mqttclient.publish(topic, value);
       sprintf(topic, "%s/aqi-particles_2p5um", webserver.Address);
-      sprintf(value, "%4d", sensor.data.particles_25um);
+      sprintf(value, "%4d", aqi_sensor.data.particles_25um);
       mqttclient.publish(topic, value);
       sprintf(topic, "%s/aqi-particles_5p0um", webserver.Address);
-      sprintf(value, "%4d", sensor.data.particles_50um);
+      sprintf(value, "%4d", aqi_sensor.data.particles_50um);
       mqttclient.publish(topic, value);
       sprintf(topic, "%s/aqi-particles_10um", webserver.Address);
-      sprintf(value, "%4d", sensor.data.particles_100um);
+      sprintf(value, "%4d", aqi_sensor.data.particles_100um);
       mqttclient.publish(topic, value);
-      mqtt_update_timer.Reset();
-
-      Serial.println(
-          F("---------------------------------------------------------"));
-      Serial.println(F("Concentration Units (environmental)"));
-      Serial.println(
-          F("---------------------------------------------------------"));
-      Serial.print(F("PM 1.0: "));
-      Serial.print(sensor.data.pm10_env);
-      Serial.print(F("\tPM 2.5: "));
-      Serial.print(sensor.data.pm25_env);
-      Serial.print(F("\tPM 10: "));
-      Serial.println(sensor.data.pm100_env);
-      Serial.println(
-          F("---------------------------------------------------------"));
-      Serial.print(F("Particles > 0.3um / 0.1L air:"));
-      Serial.println(sensor.data.particles_03um);
-      Serial.print(F("Particles > 0.5um / 0.1L air:"));
-      Serial.println(sensor.data.particles_05um);
-      Serial.print(F("Particles > 1.0um / 0.1L air:"));
-      Serial.println(sensor.data.particles_10um);
-      Serial.print(F("Particles > 2.5um / 0.1L air:"));
-      Serial.println(sensor.data.particles_25um);
-      Serial.print(F("Particles > 5.0um / 0.1L air:"));
-      Serial.println(sensor.data.particles_50um);
-      Serial.print(F("Particles > 10 um / 0.1L air:"));
-      Serial.println(sensor.data.particles_100um);
-      Serial.println();
+      Serial.printf(
+          "---------------------------------------------------------\r\n");
+      Serial.printf("PMS5003 Concentration Units (environmental)\r\n");
+      Serial.printf("PM 1.0: %d\tPM 2.5: %d\tPM 10: \r\n",
+                    aqi_sensor.data.pm10_env, aqi_sensor.data.pm25_env,
+                    aqi_sensor.data.pm100_env);
     }
+    if (envsensor.data.valid) {
+      sprintf(topic, "%s/temperature", webserver.Address);
+      sprintf(value, "%3.0f", envsensor.data.temperature_F);
+      mqttclient.publish(topic, value);
+      sprintf(topic, "%s/humidity", webserver.Address);
+      sprintf(value, "%3.0f", envsensor.data.humidity_percent);
+      mqttclient.publish(topic, value);
+      sprintf(topic, "%s/pressure", webserver.Address);
+      sprintf(value, "%6.0f", envsensor.data.pressure_Pa);
+      mqttclient.publish(topic, value);
+      Serial.printf(
+          "---------------------------------------------------------\r\n");
+      Serial.printf("BME280 Data:\r\n");
+      Serial.printf(
+          "Temp (ºF): %4.1f\tHumidity (%%): %2.0f\tPressure (Pa):%5.0f\r\n",
+          envsensor.data.temperature_F, envsensor.data.humidity_percent,
+          envsensor.data.pressure_Pa);
+      Serial.printf(
+          "---------------------------------------------------------\r\n");
+    }
+    mqtt_update_timer.Reset();
   }
   mqttclient.loop();
 
