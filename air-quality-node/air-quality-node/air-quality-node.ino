@@ -114,6 +114,10 @@ void setup() {
   display.WriteText("Warming Up..........");
 
   envsensor.Start();
+  // HACK: apply offset to temp sensor to account for self-heating of unit. This
+  // doesn't fix humidity or pressure, but will make temperature agree better
+  // with other sensors.
+  envsensor.SetTempOffset(-6.0);
 
   aqi_sensor.Start();
   mqttclient.setServer(addr_str, 1883);
@@ -176,10 +180,10 @@ void loop() {
     }
     if (envsensor.data.valid) {
       sprintf(topic, "%s/temperature", webserver.Address);
-      sprintf(value, "%3.0f", envsensor.data.temperature_F);
+      sprintf(value, "%4.1f", envsensor.data.temperature_F);
       mqttclient.publish(topic, value);
       sprintf(topic, "%s/humidity", webserver.Address);
-      sprintf(value, "%3.0f", envsensor.data.humidity_percent);
+      sprintf(value, "%4.1f", envsensor.data.humidity_percent);
       mqttclient.publish(topic, value);
       sprintf(topic, "%s/pressure", webserver.Address);
       sprintf(value, "%6.0f", envsensor.data.pressure_Pa);

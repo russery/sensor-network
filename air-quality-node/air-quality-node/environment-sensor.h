@@ -38,4 +38,5 @@ public:
   explicit EnvSensor(TwoWire *wire) : wire_(wire) { data.valid = false; }
   void Start(void);
   void Loop(void);
+  void SetTempOffset(float offset);
 };

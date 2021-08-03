@@ -27,10 +27,13 @@ void EnvSensor::Start(void) {
 }
 
 void EnvSensor::Loop(void) {
-  // float getTemperatureCompensation(void);
   data.temperature_C = bme.readTemperature();
   data.temperature_F = data.temperature_C * 9 / 5 + 32.0;
   data.humidity_percent = bme.readHumidity();
   data.pressure_Pa = bme.readPressure();
   data.valid = true;
+}
+
+void EnvSensor::SetTempOffset(float offset) {
+  bme.setTemperatureCompensation(offset);
 }
