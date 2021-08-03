@@ -1,26 +1,14 @@
-# temp-network
-Network of sensors to monitor temperature and humidity on a local network.
+# Sensor Network
+This is a network of sensors to monitor various environmental characteristics at a location. So far, there is support for temperature/humidity nodes (based on an HT11 sensor), and particulate/AQI monitoring based on a Plantronics PMS5003 sensor.
 
-The temperature sensors are a set of ESP8266 nodes with HT11 temperature sensors. These publish temperature and humidity data to a central MQTT server, which then logs the data and serves a webpage with realtime and historical data.
-
-The MQTT server / webserver can be any computer, but I'm using a Raspberry Pi. I have it set up running an avahi mdns daemon to give it a local address at `http://<pi-hostname>.local`.
+The sensor data are reported from each node over MQTT to a central server, which runs an MQTT daemon, an InfluxDB database, and a Grafana display interface. The server can be any computer, but I'm using a Raspberry Pi. I have it set up running an avahi mdns daemon to give it a local address at `http://<pi-hostname>.local`.
 
 # Setup
 
-## Sensor Node
-Each sensor node is an [ESP8266 NodeMCU](https://www.amazon.com/HiLetgo-Internet-Development-Wireless-Micropython/dp/B010O1G1ES) with a [DH11 Temperature Sensor](https://www.amazon.com/gp/product/B01DKC2GQ0/) wired to it. The DHT11 wiring is very simple:
-- DHT11 `+` pin to the ESP8266 `VIN/5V` pin
-- DHT11 `-` pin to an ESP8266 `GND` pin
-- DHT11 `out` pin to ESP8266 `GPIO14` (marked `D5`)
-
-To load code onto the ESP8266, connect it to your computer, enter a command line in the `sensor-node` directory and run:
-```
-make config-tools
-make program
-```
-Once programming is complete, open a web browser to [http://unnamed.local/](http://unnamed.local/). This will show you a simple status page verifying that the temperature and humidity readings are working. Additionally, it allows you to rebrand the sensor node with a more useful name (e.g. "bedroom", "upstairs", etc.). This name will be used for the URL and MQTT topic, so it can't have any spaces or other weird characters in it.
-
-Repeat these steps with as many sensors as you like, and they'll start publishing temperature and humidity data on your network.
+## Sensor Nodes
+The hardware and software setups for each of the nodes are documented in their respective folders:
+[air-quality-node](air-quality-node/)
+[temp-node](temp-node/)
 
 ## Server
 You'll need to have [Mosquitto](https://mosquitto.org/) or some other MQTT broker/server running. This doesn't have to be on the same machine that's serving the status page, but it's OK if it is. To install on Linux and enable the broker service, run the following:
