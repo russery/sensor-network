@@ -4,9 +4,11 @@ This is a sensor node based around the [Plantower PMS5003](http://www.plantower.
 
 ## Hardware Setup
 This node uses an ESP32 processor board (vs. the ESP8266 used on other sensor nodes), mostly because it's what I had on hand. The sensors and ESP32 are wired up as follows:
+
 <img src="../docs/air-quality-node-diagram.png" width="800px"/>
 
 I wired it up on a perfboard, and it ended up looking like this:
+
 <img src="../docs/air-quality-node-hardware.jpg" width="300px"/>
 
 
