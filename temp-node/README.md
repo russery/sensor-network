@@ -9,6 +9,8 @@ The DHT11 wiring is very simple:
 
 
 ## Software Setup
+Rename `arduino_secrets.h.example` to `arduino_secrets.h` and change the wifi SSID and password in it to match the network you wish to attach to.
+
 You'll need to have the Arduino-cli toolchain and gnu make installed. Once those prerequisites are satisfied, connect the ESP8266 to your computer, enter a command line in the `sensor-node` directory and run:
 ```
 make config-tools
