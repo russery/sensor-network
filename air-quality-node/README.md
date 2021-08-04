@@ -13,6 +13,8 @@ I wired it up on a perfboard, and it ended up looking like this:
 
 
 ## Software Setup
+Rename `arduino_secrets.h.example` to `arduino_secrets.h` and change the wifi SSID and password in it to match the network you wish to attach to.
+
 You'll need to have the Arduino-cli toolchain and gnu make installed. Once those prerequisites are satisfied, open a command line in the `air-quality-node` subdirectory, and run the following with the ESP32 connected to your computer:
 ```
 make config-tools
