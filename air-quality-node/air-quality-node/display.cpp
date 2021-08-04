@@ -22,13 +22,11 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <algorithm>
 
 void Display::Start(void) {
-  Wire.begin(BSP::I2C_SDA_PIN, BSP::I2C_SCL_PIN);
-
   if (!display_.begin(
           SSD1306_SWITCHCAPVCC, // Generate display voltage from 3.3V internally
           SCREEN_ADDRESS,
           false, // reset = false; no hardware reset
-          false  // periphBegin = false; Wire.begin() is handled above
+          false  // periphBegin = false; Wire.begin() is handled elsewhere
           )) {
     Serial.println(F("SSD1306 allocation failed"));
     return;
