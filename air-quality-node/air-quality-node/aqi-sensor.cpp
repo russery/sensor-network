@@ -68,6 +68,7 @@ void AQISensor::Loop(void) {
       BSP::AQI_SERIAL_PORT->write(cmd_str,
                                   sizeof(cmd_str) / sizeof(cmd_str[0]));
       state = SensorState::WAIT_WARMUP;
+      Serial.println("\r\nWaiting for sensor warmup");
       timer.Reset();
     }
     break;
@@ -91,9 +92,10 @@ void AQISensor::Loop(void) {
     break;
   }
   case SensorState::WAIT_PACKET:
-    if (timer.CheckIntervalExceeded(5000)) {
+    if (timer.CheckIntervalExceeded(2000)) {
       // Sensor not responding, so reset it.
       state = SensorState::RESET_LOW;
+      Serial.println("\r\nSensor response timed out... resetting sensor");
     } else if (BSP::AQI_SERIAL_PORT->available() >= PACKET_LENGTH) {
       int16_t read_byte;
       do {
@@ -115,7 +117,8 @@ void AQISensor::Loop(void) {
                         BSP::AQI_SERIAL_PORT->read();
       checksum += (length & 0x00FF) + (length >> 8);
       if (length != PACKET_LENGTH) {
-        state = SensorState::WAIT_PACKET;
+        Serial.println("\r\nInvalid packet length received");
+        state = SensorState::REQUEST_PACKET;
         break;
       }
       uint8_t d[2];
@@ -130,6 +133,8 @@ void AQISensor::Loop(void) {
         memcpy((void *)&data, (void *)buffer, PACKET_LENGTH - 4);
         stale_timer_.Reset();
         data_valid_ = true;
+      } else {
+        Serial.println("\r\nBad checksum");
       }
       state = SensorState::REQUEST_PACKET;
     }
@@ -137,6 +142,6 @@ void AQISensor::Loop(void) {
   }
 }
 
-bool AQISensor::IsDataStale(unsigned long stale_ms) {
+bool AQISensor::AreDataStale(unsigned long stale_ms) {
   return stale_timer_.CheckIntervalExceeded(stale_ms) || !data_valid_;
 }

@@ -42,7 +42,6 @@ unsigned long time_diff(unsigned long last_ms) {
   return abs((long long)millis() - (long long)last_ms);
 }
 
-
 // cppcheck-suppress unusedFunction
 void setup() {
   Serial.begin(115200);
@@ -93,7 +92,7 @@ void loop() {
   static long last_temp_ms = millis();
   if (mqttclient.connected()) {
     if (time_diff(last_temp_ms) > 10000) {
-      //digitalWrite(BSP::LED_PIN, BSP::LED_ON);
+      // digitalWrite(BSP::LED_PIN, BSP::LED_ON);
       last_temp_ms = millis();
       sensor.Loop();
       char topic[256] = {0};

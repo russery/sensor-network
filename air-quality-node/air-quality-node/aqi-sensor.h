@@ -42,7 +42,7 @@ class AQISensor {
 public:
   void Start(void);
   void Loop(void);
-  bool IsDataStale(unsigned long stale_ms = 60 * 1000);
+  bool AreDataStale(unsigned long stale_ms = 60 * 1000);
   SensorData_t data = {0};
 
 private:

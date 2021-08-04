@@ -1,5 +1,5 @@
 /*
-Implements a simple timer for task loops.
+Interface for a BME280 pressure/humidity/temp sensor.
 
 Copyright (C) 2021  Robert Ussery
 
@@ -17,22 +17,23 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef __LOOP_TIMER_H
-#define __LOOP_TIMER_H
+#include "environment-sensor.h"
 
-class LoopTimer {
-private:
-  unsigned long last_loop_ms;
-
-public:
-  LoopTimer(void) { Reset(); }
-  void Reset(void) { last_loop_ms = millis(); }
-  bool CheckIntervalExceeded(unsigned long interval_ms) {
-    return abs((long long)millis() - (long long)last_loop_ms) > interval_ms;
+void EnvSensor::Start(void) {
+  if (!bme.begin(0x76, wire_)) {
+    Serial.println("Could not find BME280 sensor");
+    return;
   }
-  unsigned long GetCurrentValueMs(void) {
-    return (unsigned long)abs((long long)millis() - (long long)last_loop_ms);
-  }
-};
+}
 
-#endif //__LOOP_TIMER_H
+void EnvSensor::Loop(void) {
+  data.temperature_C = bme.readTemperature();
+  data.temperature_F = data.temperature_C * 9 / 5 + 32.0;
+  data.humidity_percent = bme.readHumidity();
+  data.pressure_Pa = bme.readPressure();
+  data.valid = true;
+}
+
+void EnvSensor::SetTempOffset(float offset) {
+  bme.setTemperatureCompensation(offset);
+}

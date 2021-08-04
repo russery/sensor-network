@@ -1,5 +1,5 @@
 /*
-Implements a simple timer for task loops.
+Interface for a BME280 pressure/humidity/temp sensor.
 
 Copyright (C) 2021  Robert Ussery
 
@@ -17,22 +17,26 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#ifndef __LOOP_TIMER_H
-#define __LOOP_TIMER_H
+#include <Adafruit_BME280.h>
+#include <Wire.h>
 
-class LoopTimer {
+class EnvSensor {
+  typedef struct {
+    float temperature_C;
+    float temperature_F;
+    float humidity_percent;
+    float pressure_Pa;
+    bool valid;
+  } SensorData_t;
+
 private:
-  unsigned long last_loop_ms;
+  TwoWire *wire_;
+  Adafruit_BME280 bme;
 
 public:
-  LoopTimer(void) { Reset(); }
-  void Reset(void) { last_loop_ms = millis(); }
-  bool CheckIntervalExceeded(unsigned long interval_ms) {
-    return abs((long long)millis() - (long long)last_loop_ms) > interval_ms;
-  }
-  unsigned long GetCurrentValueMs(void) {
-    return (unsigned long)abs((long long)millis() - (long long)last_loop_ms);
-  }
+  SensorData_t data;
+  explicit EnvSensor(TwoWire *wire) : wire_(wire) { data.valid = false; }
+  void Start(void);
+  void Loop(void);
+  void SetTempOffset(float offset);
 };
-
-#endif //__LOOP_TIMER_H

@@ -27,11 +27,16 @@ public:
   static constexpr char LED_PIN PROGMEM = 2;
   static constexpr char LED_OFF PROGMEM = LOW;
   static constexpr char LED_ON PROGMEM = HIGH;
+
   static constexpr char BUTTON_PIN PROGMEM = 0;
   static constexpr bool BUTTON_PRESSED PROGMEM = 0;
+
   static constexpr HardwareSerial *AQI_SERIAL_PORT PROGMEM = &Serial2;
-  static constexpr char AQI_RESET_PIN PROGMEM = 5;
-  static constexpr char AQI_SET_PIN PROGMEM = 13;
+  static constexpr char AQI_RESET_PIN PROGMEM = 2;
+  static constexpr char AQI_SET_PIN PROGMEM = 23;
+
+  static constexpr char I2C_SDA_PIN = 21;
+  static constexpr char I2C_SCL_PIN = 22;
 };
 
 #endif // __BSP_H

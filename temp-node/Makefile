@@ -21,8 +21,8 @@ else ifeq ($(MCU_TYPE), esp32)
 endif
 LIBRARIES ?= PubSubClient # Add extra libraries in a space-separated list
 
-PROJECT_BASE = air-quality-node
-PROJECT ?= air-quality-node
+PROJECT_BASE = temp-node
+PROJECT ?= temp-node
 
 # Tool paths / names
 ARDUINO_CLI = arduino-cli

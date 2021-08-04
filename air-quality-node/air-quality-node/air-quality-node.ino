@@ -1,5 +1,5 @@
 /*
-Implements a temperature/humidity sensor node with a
+Implements an AQI sensor node with a
 branding/configuration webpage and that broadcasts data over MQTT.
 
 Copyright (C) 2021  Robert Ussery
@@ -20,9 +20,12 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include "aqi-sensor.h"
 #include "arduino_secrets.h"
 #include "bsp.h"
+#include "display.h"
+#include "environment-sensor.h"
 #include "loop-timer.h"
 #include "webserver.h"
 #include <ArduinoOTA.h>
+#include <Wire.h>
 #if defined(ESP32)
 #include <WiFi.h>
 #include <mdns.h>
@@ -36,8 +39,10 @@ extern const char WIFI_PASSWORD[];
 extern const char OTA_UPDATE_PWD[];
 extern const char MQTT_SERVER[];
 
-AQISensor sensor;
-Webserver webserver(&sensor);
+Display display(&Wire);
+EnvSensor envsensor(&Wire);
+AQISensor aqi_sensor;
+Webserver webserver(&aqi_sensor);
 WiFiClient wificlient;
 PubSubClient mqttclient(wificlient);
 
@@ -85,12 +90,14 @@ void setup() {
   });
   ArduinoOTA.begin();
 
-  Serial.printf("\r\nQuery A: %s", MQTT_SERVER);
-
+  // Get IP address of MQTT server:
   struct ip4_addr addr;
   addr.addr = 0;
-
-  esp_err_t err = mdns_query_a("printer", 2000, &addr);
+  char server_copy[sizeof(MQTT_SERVER)];
+  memcpy(server_copy, MQTT_SERVER, sizeof(MQTT_SERVER));
+  // Get part of server name before TLD, assumes no subdomain:
+  char *server_no_tld = strtok(server_copy, ".");
+  esp_err_t err = mdns_query_a(server_no_tld, 2000, &addr);
   if (err) {
     if (err == ESP_ERR_NOT_FOUND) {
       printf("Host was not found!");
@@ -101,88 +108,101 @@ void setup() {
   }
   char addr_str[16];
   sprintf(addr_str, IPSTR, IP2STR(&addr));
-  Serial.println(addr_str);
 
-  sensor.Start();
+  Wire.begin(BSP::I2C_SDA_PIN, BSP::I2C_SCL_PIN);
+  display.Start();
+  display.WriteText("Warming Up..........");
+
+  envsensor.Start();
+  // HACK: apply offset to temp sensor to account for self-heating of unit. This
+  // doesn't fix humidity or pressure, but will make temperature agree better
+  // with other sensors.
+  envsensor.SetTempOffset(-6.0);
+
+  aqi_sensor.Start();
   mqttclient.setServer(addr_str, 1883);
 }
 
 void loop() {
-  sensor.Loop();
+  aqi_sensor.Loop();
+  envsensor.Loop();
 
   static LoopTimer mqtt_update_timer;
   if (!mqttclient.connected()) {
-    mqttclient.connect(webserver.Address);
-  } else {
-    if (mqtt_update_timer.CheckIntervalExceeded(5000) &&
-        !sensor.IsDataStale()) {
-      digitalWrite(BSP::LED_PIN, BSP::LED_ON);
-      char topic[256] = {0};
-      char value[16] = {0};
+    Serial.println("\r\nNo MQTT connection... connecting");
+    if (!mqttclient.connect(webserver.Address)) {
+      Serial.print("\r\nConnection failed, State = ");
+      Serial.print(mqttclient.state());
+      Serial.print("\r\n");
+      // HACK: Client reconnect never seems to work without a reboot, so just
+      // reboot:
+      reset();
+    }
+  } else if (mqtt_update_timer.CheckIntervalExceeded(5000)) {
+    char topic[256] = {0};
+    char value[16] = {0};
+    if (!aqi_sensor.AreDataStale()) {
+      display.Update(aqi_sensor.data.pm25_env);
+
       sprintf(topic, "%s/aqi-pm1p0", webserver.Address);
-      sprintf(value, "%4d", sensor.data.pm10_env);
+      sprintf(value, "%4d", aqi_sensor.data.pm10_env);
       mqttclient.publish(topic, value);
       sprintf(topic, "%s/aqi-pm2p5", webserver.Address);
-      sprintf(value, "%4d", sensor.data.pm25_env);
+      sprintf(value, "%4d", aqi_sensor.data.pm25_env);
       mqttclient.publish(topic, value);
       sprintf(topic, "%s/aqi-pm10", webserver.Address);
-      sprintf(value, "%4d", sensor.data.pm100_env);
+      sprintf(value, "%4d", aqi_sensor.data.pm100_env);
       mqttclient.publish(topic, value);
       sprintf(topic, "%s/aqi-particles_0p3um", webserver.Address);
-      sprintf(value, "%4d", sensor.data.particles_03um);
+      sprintf(value, "%4d", aqi_sensor.data.particles_03um);
       mqttclient.publish(topic, value);
       sprintf(topic, "%s/aqi-particles_0p5um", webserver.Address);
-      sprintf(value, "%4d", sensor.data.particles_05um);
+      sprintf(value, "%4d", aqi_sensor.data.particles_05um);
       mqttclient.publish(topic, value);
       sprintf(topic, "%s/aqi-particles_1p0um", webserver.Address);
-      sprintf(value, "%4d", sensor.data.particles_10um);
+      sprintf(value, "%4d", aqi_sensor.data.particles_10um);
       mqttclient.publish(topic, value);
       sprintf(topic, "%s/aqi-particles_2p5um", webserver.Address);
-      sprintf(value, "%4d", sensor.data.particles_25um);
+      sprintf(value, "%4d", aqi_sensor.data.particles_25um);
       mqttclient.publish(topic, value);
       sprintf(topic, "%s/aqi-particles_5p0um", webserver.Address);
-      sprintf(value, "%4d", sensor.data.particles_50um);
+      sprintf(value, "%4d", aqi_sensor.data.particles_50um);
       mqttclient.publish(topic, value);
       sprintf(topic, "%s/aqi-particles_10um", webserver.Address);
-      sprintf(value, "%4d", sensor.data.particles_100um);
+      sprintf(value, "%4d", aqi_sensor.data.particles_100um);
       mqttclient.publish(topic, value);
-      mqtt_update_timer.Reset();
-
-      Serial.println(F("-------------------------------------------------"));
-      Serial.println(F("Concentration Units (standard)"));
-      Serial.println(F("---------------------------------------"));
-      Serial.print(F("PM 1.0: "));
-      Serial.print(sensor.data.pm10_standard);
-      Serial.print(F("\t\tPM 2.5: "));
-      Serial.print(sensor.data.pm25_standard);
-      Serial.print(F("\t\tPM 10: "));
-      Serial.println(sensor.data.pm100_standard);
-      Serial.println(F("Concentration Units (environmental)"));
-      Serial.println(F("---------------------------------------"));
-      Serial.print(F("PM 1.0: "));
-      Serial.print(sensor.data.pm10_env);
-      Serial.print(F("\t\tPM 2.5: "));
-      Serial.print(sensor.data.pm25_env);
-      Serial.print(F("\t\tPM 10: "));
-      Serial.println(sensor.data.pm100_env);
-      Serial.println(F("---------------------------------------"));
-      Serial.print(F("Particles > 0.3um / 0.1L air:"));
-      Serial.println(sensor.data.particles_03um);
-      Serial.print(F("Particles > 0.5um / 0.1L air:"));
-      Serial.println(sensor.data.particles_05um);
-      Serial.print(F("Particles > 1.0um / 0.1L air:"));
-      Serial.println(sensor.data.particles_10um);
-      Serial.print(F("Particles > 2.5um / 0.1L air:"));
-      Serial.println(sensor.data.particles_25um);
-      Serial.print(F("Particles > 5.0um / 0.1L air:"));
-      Serial.println(sensor.data.particles_50um);
-      Serial.print(F("Particles > 10 um / 0.1L air:"));
-      Serial.println(sensor.data.particles_100um);
-      Serial.println();
+      Serial.printf(
+          "---------------------------------------------------------\r\n");
+      Serial.printf("PMS5003 Concentration Units (environmental)\r\n");
+      Serial.printf("PM 1.0: %d\tPM 2.5: %d\tPM 10: \r\n",
+                    aqi_sensor.data.pm10_env, aqi_sensor.data.pm25_env,
+                    aqi_sensor.data.pm100_env);
     }
+    if (envsensor.data.valid) {
+      sprintf(topic, "%s/temperature", webserver.Address);
+      sprintf(value, "%4.1f", envsensor.data.temperature_F);
+      mqttclient.publish(topic, value);
+      sprintf(topic, "%s/humidity", webserver.Address);
+      sprintf(value, "%4.1f", envsensor.data.humidity_percent);
+      mqttclient.publish(topic, value);
+      sprintf(topic, "%s/pressure", webserver.Address);
+      sprintf(value, "%6.0f", envsensor.data.pressure_Pa);
+      mqttclient.publish(topic, value);
+      Serial.printf(
+          "---------------------------------------------------------\r\n");
+      Serial.printf("BME280 Data:\r\n");
+      Serial.printf(
+          "Temp (ºF): %4.1f\tHumidity (%%): %2.0f\tPressure (Pa):%5.0f\r\n",
+          envsensor.data.temperature_F, envsensor.data.humidity_percent,
+          envsensor.data.pressure_Pa);
+      Serial.printf(
+          "---------------------------------------------------------\r\n");
+    }
+    mqtt_update_timer.Reset();
   }
   mqttclient.loop();
 
+  // Handle button presses (used to reset mdns address to default):
   static bool last_button_state = digitalRead(BSP::BUTTON_PIN);
   static LoopTimer button_timer;
   bool button_state = digitalRead(BSP::BUTTON_PIN);
@@ -194,6 +214,7 @@ void loop() {
     webserver.ChangeAddress(Webserver::DEFAULT_ADDRESS);
   }
 
+  // Handle reboot if user changes mdns address from webpage:
   static LoopTimer address_change_timer;
   if (!webserver.AddressChanged)
     address_change_timer.Reset();
@@ -205,8 +226,6 @@ void loop() {
 
   webserver.Loop();
   ArduinoOTA.handle();
-
-  digitalWrite(BSP::LED_PIN, BSP::LED_OFF);
 
   yield(); // Make sure WiFi can do its thing.
 }
