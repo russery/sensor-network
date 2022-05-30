@@ -19,7 +19,7 @@ else ifeq ($(MCU_TYPE), esp32)
 	GIT_LIBRARIES ?= https://github.com/me-no-dev/ESPAsyncWebServer.git https://github.com/me-no-dev/AsyncTCP.git
 	BOARD_OPTIONS ?=
 endif
-LIBRARIES ?= PubSubClient # Add extra libraries in a space-separated list
+LIBRARIES ?= PubSubClient "DHT sensor library" # Add extra libraries in a space-separated list
 
 PROJECT_BASE = temp-node
 PROJECT ?= temp-node
@@ -54,7 +54,7 @@ config-tools:
 	$(foreach lib, $(GIT_LIBRARIES), $(ARDUINO_CLI) lib install --git-url $(lib);)
 
 build: format
-	$(ARDUINO_CLI) compile $(VERBOSE) --build-path=$(BUILD_PATH) --build-cache-path=$(BUILD_PATH) -b $(BOARD_TYPE)$(BOARD_OPTIONS) --build-property "compiler.cpp.extra_flags=-D$(HARDWARE)" $(PROJECT_BASE)/$(PROJECT)
+	$(ARDUINO_CLI) compile $(VERBOSE) -b $(BOARD_TYPE)$(BOARD_OPTIONS) --build-property "compiler.cpp.extra_flags=-D$(HARDWARE)" $(PROJECT_BASE)/$(PROJECT)
 
 program: all stop-serial
 	$(ARDUINO_CLI) upload $(VERBOSE) -p $(SERIAL_PORT) --fqbn $(BOARD_TYPE)$(BOARD_OPTIONS) --input-dir=$(BUILD_PATH)
